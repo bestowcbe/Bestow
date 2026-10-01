@@ -7,7 +7,7 @@
 // ============================================
 const PAYMENT_CONFIG = {
     razorpay: {
-        key: 'rzp_test_T2bYpqwXj12AAb',  // ⬅️ Replace with your Razorpay Key
+        key: 'rzp_live_Tiaz0WLPoA9L2b',  // ⬅️ Replace with your Razorpay Key
         merchant_name: 'Bestow',
         merchant_logo: 'https://res.cloudinary.com/dnwqpvkq6/image/upload/q_auto/f_auto/v1781696384/Untitled_design_24_kyqbou.png',
         theme_color: '#de2128'
