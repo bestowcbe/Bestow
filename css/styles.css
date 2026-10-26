@@ -617,7 +617,6 @@ html, body { overflow-x: clip; max-width: 100%; }
     .shop-toolbar .toolbar-right { grid-column: 1 / -1; grid-row: 2; display: grid; grid-template-columns: 1fr auto; gap: 10px; margin: 0; width: 100%; }
     .shop-toolbar .toolbar-right select { width: 100%; min-height: 44px; }
     .view-toggle-btn { width: 42px; height: 38px; }
-    .site-footer { padding-bottom: calc(110px + var(--safe-b)); }
     .footer-bottom { align-items: center; text-align: center; gap: 14px; margin-top: 32px; padding: 18px 16px 0; } .footer-bottom p { width: 100%; }
     .footer-bottom-links { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%; }
     .footer-bottom-links a, .footer-bottom-links .link-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 0 16px; border-radius: var(--r-pill); border: 1px solid rgba(255, 255, 255, .18); color: #fff; font-size: .86rem; }
@@ -651,3 +650,16 @@ html, body { overflow-x: clip; max-width: 100%; }
     .product-card-foot { flex-direction: column; align-items: stretch; gap: 10px; } .product-card-foot .btn { width: 100%; justify-content: center; }
     .price { font-size: 1.02rem; }
 }
+
+/* 21. no dead space under the footer when the bottom nav is shown */
+@media (max-width: 960px) { body { padding-bottom: 0; } .site-footer { padding-bottom: calc(var(--bottom-nav-h) + var(--safe-b) + 14px); } }
+@media (min-width: 641px) and (max-width: 960px) {
+    .footer-bottom { flex-direction: column; align-items: center; text-align: center; gap: 14px; margin-top: 28px; }
+    .footer-bottom-links { display: flex; justify-content: center; align-items: center; gap: 12px; flex-wrap: wrap; width: 100%; }
+    .footer-bottom-links a, .footer-bottom-links .link-btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 40px; padding: 0 18px; border-radius: var(--r-pill); border: 1px solid rgba(255, 255, 255, .18); color: #fff; font-size: .86rem; }
+    .footer-pay { justify-content: center; flex-direction: column; text-align: center; } .footer-pay ul { justify-content: center; }
+}
+.nav-link { white-space: nowrap; }
+@media (min-width: 961px) and (max-width: 1200px) { .footer-grid { grid-template-columns: 1.3fr .8fr .9fr 1.2fr; gap: 28px; } .nav-link { padding-inline: 12px; font-size: .9rem; } .nav-link i, .nav-link svg { display: none; } }
+@media (min-width: 961px) { .footer-bottom { padding-right: 88px; } }
+@media (min-width: 961px) { .footer-pay { padding-right: 88px; } }
