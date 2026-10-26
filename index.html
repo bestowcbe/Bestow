@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Bestow - Premium Customized Gifts</title>
+<meta name="description" content="Premium customized gifts including awards, keychains, photo frames, badges, name boards and caricatures.">
+<meta name="keywords" content="customized gifts, personalized mementos, awards, keychains">
+<meta name="theme-color" content="#de2128">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Bestow - Premium Customized Gifts">
+<meta property="og:description" content="Premium customized gifts including awards, keychains, photo frames, badges, name boards and caricatures.">
+<meta property="og:image" content="https://res.cloudinary.com/j1fhagji/image/upload/v1791879105/Bestow_ColourAsset_1_2x-8.png">
+<link rel="icon" href="https://res.cloudinary.com/j1fhagji/image/upload/v1791879105/Bestow_ColourAsset_1_2x-8.png">
+<link rel="apple-touch-icon" href="https://res.cloudinary.com/j1fhagji/image/upload/v1791879105/Bestow_ColourAsset_1_2x-8.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600;9..144,700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script>
+(function () {
+    try {
+        var t = JSON.parse(localStorage.getItem('bestow_theme'));
+        if (t !== 'dark' && t !== 'light') t = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        document.documentElement.setAttribute('data-theme', t);
+    } catch (e) { /* default light */ }
+})();
+</script>
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-current="home">
+<a class="skip-link" href="#mainContent"><span data-cms="a11y.skip">Skip to content</span></a>
+<div id="scrollProgress" class="scroll-progress" aria-hidden="true"></div>
+<div id="routeAnnouncer" class="sr-only" aria-live="polite"></div>
+
+<div id="appLoader" class="app-loader" aria-hidden="true">
+    <div class="loader-card glass"><img data-logo="auto" alt="Bestow" class="loader-logo" src="https://res.cloudinary.com/j1fhagji/image/upload/v1791879105/Bestow_ColourAsset_1_2x-8.png"><span class="loader-bar"><i></i></span></div>
+</div>
+
+<div id="offlineBanner" class="offline-banner" role="status"><i data-lucide="wifi-off"></i><span id="offlineText"></span></div>
+
+<div id="announceBar" class="announce-bar" role="region" aria-label="Announcement">
+    <p id="announceText"></p>
+    <button type="button" id="announceClose" class="icon-btn icon-btn-sm" aria-label="Close announcement" data-cms-title="a11y.close_announce"><i data-lucide="x"></i></button>
+</div>
+
+<!-- ============================== HEADER ============================== -->
+<header id="mainHeader" class="site-header">
+    <div class="topbar">
+        <div class="container topbar-inner">
+            <a class="topbar-item" data-href-bind="tel:contact.phone" href="tel:+916382052530"><i data-lucide="phone"></i><span data-bind="contact.phone">+91 63820 52530</span></a>
+            <span class="topbar-item topbar-mid"><i data-lucide="truck"></i><span data-cms="top.shipping">Free shipping above {free_shipping}</span></span>
+            <a class="topbar-item" data-route="track-order" href="#track-order"><i data-lucide="map-pin"></i><span data-cms="top.track">Track your order</span></a>
+        </div>
+    </div>
+    <div class="container header-inner">
+        <button type="button" id="navHamburger" class="icon-btn mobile-only" aria-label="Open menu" data-cms-title="a11y.open_menu"><i data-lucide="menu"></i></button>
+        <a class="brand" href="#home" data-route="home" aria-label="Home"><img data-logo="auto" alt="Bestow" class="brand-logo" src="https://res.cloudinary.com/j1fhagji/image/upload/v1791879105/Bestow_ColourAsset_1_2x-8.png"></a>
+        <nav class="main-nav" aria-label="Primary">
+            <a class="nav-link" href="#home" data-route="home"><span data-cms="nav.home">Home</span></a>
+            <a class="nav-link" href="#shop" data-route="shop"><span data-cms="nav.shop">Shop</span></a>
+            <a class="nav-link" href="#categories" data-route="categories"><span data-cms="nav.categories">Categories</span></a>
+            <a class="nav-link" href="#track-order" data-route="track-order"><i data-lucide="map-pin"></i><span data-cms="nav.track">Track order</span></a>
+            <a class="nav-link" href="#about" data-route="about"><span data-cms="nav.about">About</span></a>
+            <a class="nav-link" href="#contact" data-route="contact"><span data-cms="nav.contact">Contact</span></a>
+        </nav>
+        <div class="header-actions">
+            <button type="button" id="searchToggleBtn" class="icon-btn" aria-label="Search" data-cms-title="a11y.search"><i data-lucide="search"></i></button>
+            <a class="icon-btn desktop-only" href="#track-order" data-route="track-order" aria-label="Track order" data-cms-title="a11y.track"><i data-lucide="package-search"></i></a>
+            <button type="button" class="icon-btn js-cmd-open desktop-only" aria-label="Quick actions" data-cms-title="a11y.cmd"><i data-lucide="command"></i></button>
+            <button type="button" class="icon-btn js-theme-toggle" aria-label="Switch theme" data-cms-title="a11y.theme"><i data-lucide="moon" class="theme-moon"></i><i data-lucide="sun" class="theme-sun"></i></button>
+            <a class="icon-btn desktop-only" href="#wishlist" data-route="wishlist" aria-label="Wishlist" data-cms-title="a11y.wishlist"><i data-lucide="heart"></i><span class="count-badge js-wish-count">0</span></a>
+            <button type="button" class="icon-btn js-cart-btn" aria-label="Open cart" data-cms-title="a11y.cart"><i data-lucide="shopping-bag"></i><span class="count-badge js-cart-count">0</span></button>
+            <div class="user-menu">
+                <button type="button" id="userMenuBtn" class="icon-btn" aria-label="Account" aria-haspopup="true" data-cms-title="a11y.account"><i data-lucide="user"></i></button>
+                <div id="userDropdown" class="user-dropdown glass" role="menu">
+                    <div id="userDropdownHeader" class="user-dropdown-header"></div>
+                    <div id="userDropdownBody" class="user-dropdown-body"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div id="searchOverlay" class="search-overlay glass" role="search">
+        <div class="container">
+            <div class="search-box">
+                <i data-lucide="search"></i>
+                <input id="searchInput" type="search" autocomplete="off" placeholder="Search gifts, categories..." data-cms-ph="search.placeholder" aria-label="Search">
+                <button type="button" id="voiceSearchBtn" class="icon-btn icon-btn-sm" aria-label="Voice search" data-cms-title="a11y.voice"><i data-lucide="mic"></i></button>
+                <button type="button" id="searchCloseBtn" class="icon-btn icon-btn-sm" aria-label="Close search" data-cms-title="a11y.close_search"><i data-lucide="x"></i></button>
+            </div>
+            <div id="searchResults" class="search-results"></div>
+        </div>
+    </div>
+</header>
+
+<!-- ============================== MOBILE NAV ============================== -->
+<div id="mobileNavOverlay" class="drawer-overlay"></div>
+<aside id="mobileNav" class="mobile-nav glass" aria-label="Menu">
+    <div class="mobile-nav-head"><img data-logo="auto" alt="Bestow" class="brand-logo" src="https://res.cloudinary.com/j1fhagji/image/upload/v1791879105/Bestow_ColourAsset_1_2x-8.png"><button type="button" id="mobileNavClose" class="icon-btn" aria-label="Close menu" data-cms-title="a11y.close_menu"><i data-lucide="x"></i></button></div>
+    <nav class="mobile-nav-links">
+        <a href="#home" data-route="home"><i data-lucide="home"></i><span data-cms="nav.home">Home</span></a>
+        <a href="#shop" data-route="shop"><i data-lucide="gift"></i><span data-cms="nav.shop">Shop</span></a>
+        <a href="#categories" data-route="categories"><i data-lucide="layers"></i><span data-cms="nav.categories">Categories</span></a>
+        <a href="#wishlist" data-route="wishlist"><i data-lucide="heart"></i><span data-cms="nav.wishlist">Wishlist</span></a>
+        <a href="#track-order" data-route="track-order"><i data-lucide="map-pin"></i><span data-cms="nav.track">Track order</span></a>
+        <a href="#about" data-route="about"><i data-lucide="info"></i><span data-cms="nav.about">About</span></a>
+        <a href="#contact" data-route="contact"><i data-lucide="mail"></i><span data-cms="nav.contact">Contact</span></a>
+        <a href="#faq" data-route="faq"><i data-lucide="help-circle"></i><span data-cms="nav.faq">FAQ</span></a>
+        <a href="#admin" data-route="admin" class="js-admin-only" style="display:none"><i data-lucide="layout-dashboard"></i><span data-cms="nav.admin">Admin panel</span></a>
+        <button type="button" id="mobileAuthBtn" data-action="login"><i data-lucide="log-in"></i><span>Sign in</span></button>
+        <button type="button" class="js-install" style="display:none"><i data-lucide="download"></i><span data-cms="nav.install">Install app</span></button>
+    </nav>
+</aside>
+
+<!-- ============================== MAIN ============================== -->
+<main id="mainContent" tabindex="-1">
+
+<!-- ---------- HOME ---------- -->
+<section id="pageHome" class="page">
+    <div class="hero">
+        <canvas id="heroParticles" class="hero-particles" aria-hidden="true"></canvas>
+        <div class="hero-orb orb-a" aria-hidden="true"></div><div class="hero-orb orb-b" aria-hidden="true"></div>
+        <div class="container hero-inner">
+            <div class="hero-copy">
+                <span class="eyebrow glass-pill"><i data-lucide="sparkles"></i><span data-bind="branding.tagline">Elevate Your Memories</span></span>
+                <h1 class="hero-title"><span data-cms="hero.title">Gifts that turn moments into keepsakes</span></h1>
+                <p class="hero-sub"><span data-cms="hero.sub">Awards, keychains, photo frames, badges, name boards and caricatures, crafted to order with your names, words and photos.</span></p>
+                <div class="hero-cta">
+                    <a href="#shop" data-route="shop" class="btn btn-primary btn-lg"><span data-cms="hero.cta1">Shop the collection</span><i data-lucide="arrow-right"></i></a>
+                    <a href="#categories" data-route="categories" class="btn btn-glass btn-lg"><span data-cms="hero.cta2">Browse categories</span></a>
+                    <a href="#track-order" data-route="track-order" class="btn btn-ghost btn-lg"><i data-lucide="map-pin"></i><span data-cms="hero.cta3">Track my order</span></a>
+                </div>
+                <ul class="hero-stats">
+                    <li><strong class="hero-stat-number" data-cms="hero.stat1">100%</strong><span data-cms="hero.stat1_l">Personalised</span></li>
+                    <li><strong class="hero-stat-number" data-cms="hero.stat2">7</strong><span data-cms="hero.stat2_l">Day returns on eligible items</span></li>
+                    <li><strong class="hero-stat-number" data-cms="hero.stat3">Pan India</strong><span data-cms="hero.stat3_l">Delivery</span></li>
+                </ul>
+            </div>
+            <div class="hero-visual glass" aria-hidden="true">
+                <img data-logo="colour" alt="" class="hero-logo" src="https://res.cloudinary.com/j1fhagji/image/upload/v1791879105/Bestow_ColourAsset_1_2x-8.png">
+                <div class="hero-chip chip-1 glass-pill"><i data-lucide="award"></i><span data-cms="hero.chip1">Awards</span></div>
+                <div class="hero-chip chip-2 glass-pill"><i data-lucide="frame"></i><span data-cms="hero.chip2">Frames</span></div>
+                <div class="hero-chip chip-3 glass-pill"><i data-lucide="key-round"></i><span data-cms="hero.chip3">Keychains</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="trust-strip">
+        <div class="container trust-grid">
+            <div class="trust-item glass"><i data-lucide="pen-line"></i><div><strong data-cms="trust.1t">Made to order</strong><span data-cms="trust.1d">Every piece is personalised</span></div></div>
+            <div class="trust-item glass"><i data-lucide="shield-check"></i><div><strong data-cms="trust.2t">Secure payments</strong><span data-cms="trust.2d">UPI, cards and net banking</span></div></div>
+            <div class="trust-item glass"><i data-lucide="truck"></i><div><strong data-cms="trust.3t">Tracked delivery</strong><span data-cms="trust.3d">Updates by email and WhatsApp</span></div></div>
+            <div class="trust-item glass"><i data-lucide="message-circle"></i><div><strong data-cms="trust.4t">Human support</strong><span data-cms="trust.4d">Chat with us on WhatsApp</span></div></div>
+        </div>
+    </div>
+
+    <section class="section"><div class="container">
+        <div class="section-header"><span class="eyebrow"><span data-cms="home.cat_eyebrow">Collections</span></span><h2><span data-cms="home.cat_title">Shop by category</span></h2><p><span data-cms="home.cat_sub">Find the perfect gift for every occasion.</span></p></div>
+        <div id="homeCategoriesGrid" class="category-grid"></div>
+    </div></section>
+
+    <section class="section section-tint"><div class="container">
+        <div class="section-header"><span class="eyebrow"><span data-cms="home.feat_eyebrow">Featured</span></span><h2><span data-cms="home.feat_title">Popular right now</span></h2><p><span data-cms="home.feat_sub">Hand-picked gifts our customers love.</span></p></div>
+        <div id="featuredProductsGrid" class="product-grid"></div>
+        <div class="center mt-lg"><a href="#shop" data-route="shop" class="btn btn-outline"><span data-cms="home.view_all">View all products</span><i data-lucide="arrow-right"></i></a></div>
+    </div></section>
+
+    <section class="section"><div class="container">
+        <div class="section-header"><span class="eyebrow"><span data-cms="home.how_eyebrow">How it works</span></span><h2><span data-cms="home.how_title">From idea to doorstep in four steps</span></h2></div>
+        <div class="process-grid">
+            <article class="process-step glass"><span class="step-no">01</span><i data-lucide="search"></i><h3><span data-cms="how.1t">Choose a gift</span></h3><p><span data-cms="how.1d">Browse our collection and pick what suits the moment.</span></p></article>
+            <article class="process-step glass"><span class="step-no">02</span><i data-lucide="pen-line"></i><h3><span data-cms="how.2t">Personalise it</span></h3><p><span data-cms="how.2d">Add names, messages and photos before you pay.</span></p></article>
+            <article class="process-step glass"><span class="step-no">03</span><i data-lucide="hammer"></i><h3><span data-cms="how.3t">We craft it</span></h3><p><span data-cms="how.3d">Your order is produced with care and quality checked.</span></p></article>
+            <article class="process-step glass"><span class="step-no">04</span><i data-lucide="package-check"></i><h3><span data-cms="how.4t">Delivered to you</span></h3><p><span data-cms="how.4d">Track your parcel until it reaches your door.</span></p></article>
+        </div>
+    </div></section>
+
+    <section class="section"><div class="container">
+        <div class="track-band glass-strong">
+            <div class="track-band-copy"><span class="eyebrow"><i data-lucide="map-pin"></i><span data-cms="trackband.eyebrow">Order tracking</span></span><h2><span data-cms="trackband.title">Where is my order?</span></h2><p><span data-cms="trackband.sub">Enter your order number and email to see live progress, courier details and your invoice.</span></p></div>
+            <form id="quickTrackForm" class="track-band-form" novalidate>
+                <input id="quickTrackNumber" type="text" required placeholder="Order number, e.g. BST-20260101-00001" data-cms-ph="trackband.ph_number" aria-label="Order number" autocomplete="off">
+                <input id="quickTrackEmail" type="email" required placeholder="Email used at checkout" data-cms-ph="trackband.ph_email" aria-label="Email" autocomplete="email">
+                <button type="submit" class="btn btn-primary"><i data-lucide="search"></i><span data-cms="trackband.btn">Track</span></button>
+            </form>
+        </div>
+    </div></section>
+
+    <section class="section recent-section"><div class="container">
+        <div class="section-header"><h2><span data-cms="home.recent_title">Recently viewed</span></h2></div>
+        <div id="recentGrid" class="recent-grid"></div>
+    </div></section>
+
+    <section class="section section-tint"><div class="container">
+        <div class="section-header"><span class="eyebrow"><span data-cms="home.rev_eyebrow">Reviews</span></span><h2><span data-cms="home.rev_title">What customers say</span></h2></div>
+        <div class="carousel glass">
+            <div id="reviewsCarousel" class="carousel-viewport"></div>
+            <div id="reviewsNav" class="carousel-nav">
+                <button type="button" id="reviewsPrev" class="icon-btn" aria-label="Previous review" data-cms-title="a11y.prev_review"><i data-lucide="chevron-left"></i></button>
+                <div id="reviewsDots" class="carousel-dots"></div>
+                <button type="button" id="reviewsNext" class="icon-btn" aria-label="Next review" data-cms-title="a11y.next_review"><i data-lucide="chevron-right"></i></button>
+            </div>
+        </div>
+    </div></section>
+
+    <section class="section"><div class="container narrow">
+        <div class="section-header"><span class="eyebrow"><span data-cms="home.faq_eyebrow">Questions</span></span><h2><span data-cms="home.faq_title">Frequently asked</span></h2></div>
+        <div id="homeFaq" class="faq-list"></div>
+        <div class="center mt-lg"><a href="#faq" data-route="faq" class="btn btn-outline"><span data-cms="home.faq_all">See all questions</span></a></div>
+    </div></section>
+
+    <section class="section"><div class="container">
+        <div class="newsletter-card glass-strong">
+            <div><h2><span data-cms="news.title">Join the Bestow circle</span></h2><p><span data-cms="news.sub">Gift ideas, new arrivals and exclusive offers. No spam, unsubscribe any time.</span></p></div>
+            <form class="js-newsletter-form newsletter-form" novalidate>
+                <input type="email" name="email" required placeholder="Your email address" data-cms-ph="news.placeholder" aria-label="Email address" autocomplete="email">
+                <button type="submit" class="btn btn-primary"><span data-cms="news.btn">Subscribe</span></button>
+            </form>
+        </div>
+    </div></section>
+</section>
+
+<!-- ---------- SHOP ---------- -->
+<section id="pageShop" class="page">
+    <div class="page-banner"><div class="container"><nav class="crumbs" aria-label="Breadcrumb"><a href="#home" data-route="home"><span data-cms="nav.home">Home</span></a><i data-lucide="chevron-right"></i><span data-cms="nav.shop">Shop</span></nav><h1><span data-cms="shop.title">Shop</span></h1><p><span data-cms="shop.sub">Premium personalised gifts, made to order.</span></p></div></div>
+    <div class="container shop-layout">
+        <div id="filterBackdrop" class="drawer-overlay"></div>
+        <aside id="shopSidebar" class="shop-sidebar glass" aria-label="Filters">
+            <div class="sidebar-head"><h2><span data-cms="shop.filters">Filters</span></h2><button type="button" id="filterCloseBtn" class="icon-btn icon-btn-sm mobile-only" aria-label="Close filters" data-cms-title="a11y.close_filters"><i data-lucide="x"></i></button></div>
+            <div class="filter-group"><button type="button" class="filter-head" data-collapse="fbCat"><span data-cms="shop.f_category">Category</span><i data-lucide="chevron-down"></i></button><div id="fbCat" class="filter-body"><div id="filterCat"></div></div></div>
+            <div class="filter-group"><button type="button" class="filter-head" data-collapse="fbPrice"><span data-cms="shop.f_price">Price</span><i data-lucide="chevron-down"></i></button><div id="fbPrice" class="filter-body"><div class="price-inputs"><input type="number" id="priceMin" min="0" placeholder="Min" aria-label="Minimum price"><span>-</span><input type="number" id="priceMax" min="0" placeholder="Max" aria-label="Maximum price"></div><button type="button" id="applyPriceFilter" class="btn btn-outline btn-sm btn-block"><span data-cms="shop.apply">Apply</span></button></div></div>
+            <div class="filter-group"><button type="button" class="filter-head" data-collapse="fbRating"><span data-cms="shop.f_rating">Rating</span><i data-lucide="chevron-down"></i></button><div id="fbRating" class="filter-body">
+                <label class="filter-option"><input type="radio" name="rating" value="0" checked><span data-cms="shop.r_any">Any rating</span></label>
+                <label class="filter-option"><input type="radio" name="rating" value="4"><span data-cms="shop.r_4">4 stars and up</span></label>
+                <label class="filter-option"><input type="radio" name="rating" value="3"><span data-cms="shop.r_3">3 stars and up</span></label></div></div>
+            <div class="filter-group"><button type="button" class="filter-head" data-collapse="fbMore"><span data-cms="shop.f_more">More</span><i data-lucide="chevron-down"></i></button><div id="fbMore" class="filter-body">
+                <label class="check-row"><input type="checkbox" id="filterInStock"><span class="check-box"></span><span class="check-text"><strong data-cms="shop.in_stock">In stock only</strong></span></label>
+                <label class="check-row"><input type="checkbox" id="filterCustomizable"><span class="check-box"></span><span class="check-text"><strong data-cms="shop.customizable">Personalisable</strong></span></label></div></div>
+            <button type="button" id="clearFiltersBtn" class="btn btn-ghost btn-block"><i data-lucide="rotate-ccw"></i><span data-cms="shop.clear">Clear all filters</span></button>
+        </aside>
+        <div class="shop-main">
+            <div id="shopToolbar" class="shop-toolbar glass">
+                <button type="button" id="mobileFilterBtn" class="btn btn-outline btn-sm mobile-only"><i data-lucide="sliders-horizontal"></i><span data-cms="shop.filters">Filters</span></button>
+                <p id="shopResultCount" class="result-count" aria-live="polite"></p>
+                <div class="toolbar-right">
+                    <label class="sr-only" for="shopSortSelect"><span data-cms="shop.sort">Sort by</span></label>
+                    <select id="shopSortSelect"><option value="newest">Newest</option><option value="popular">Most popular</option><option value="rating">Top rated</option><option value="price-asc">Price: low to high</option><option value="price-desc">Price: high to low</option><option value="name-asc">Name: A to Z</option></select>
+                    <div class="view-toggle" role="group" aria-label="Layout"><button type="button" class="view-toggle-btn active" data-view="grid" aria-label="Grid view"><i data-lucide="layout-grid"></i></button><button type="button" class="view-toggle-btn" data-view="list" aria-label="List view"><i data-lucide="list"></i></button></div>
+                </div>
+            </div>
+            <div id="shopActiveFilters" class="active-filters"></div>
+            <div id="shopProductsGrid" class="product-grid"></div>
+            <div id="shopEmpty" class="empty-state glass" style="display:none"><i data-lucide="package-search" class="empty-icon"></i><h3><span data-cms="shop.empty_title">No products found</span></h3><p data-role="text"></p><button type="button" id="resetShopBtn" class="btn btn-primary"><span data-cms="shop.reset">Reset filters</span></button></div>
+            <div id="shopPagination" class="pagination"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ---------- PRODUCT ---------- -->
+<section id="pageProduct" class="page">
+    <div class="container product-wrap">
+        <nav class="crumbs" aria-label="Breadcrumb"><a href="#home" data-route="home"><span data-cms="nav.home">Home</span></a><i data-lucide="chevron-right"></i><a href="#shop" data-route="shop"><span data-cms="nav.shop">Shop</span></a><i data-lucide="chevron-right"></i><span id="productBreadcrumbName"></span></nav>
+        <div id="productDetail" class="product-detail"></div>
+        <div class="product-tabs glass">
+            <div class="tab-bar" role="tablist">
+                <button type="button" class="product-tab-btn active" data-tab="description" role="tab"><span data-cms="product.tab_desc">Description</span></button>
+                <button type="button" class="product-tab-btn" data-tab="reviews" role="tab"><span data-cms="product.tab_reviews">Reviews</span></button>
+                <button type="button" class="product-tab-btn" data-tab="shipping" role="tab"><span data-cms="product.tab_ship">Shipping and returns</span></button>
+            </div>
+            <div id="tabDescription" class="product-tab-content active"></div>
+            <div id="tabReviews" class="product-tab-content"></div>
+            <div id="tabShipping" class="product-tab-content">
+                <div class="prose">
+                    <h4><span data-cms="product.ship_h1">Delivery</span></h4>
+                    <p><span data-cms="product.ship_p1">Orders are produced after your design details are confirmed and usually arrive in {days_min} to {days_max} business days. Shipping is free above {free_shipping}, otherwise a flat {shipping_fee} applies.</span></p>
+                    <h4><span data-cms="product.ship_h2">Returns</span></h4>
+                    <p><span data-cms="product.ship_p2">Non-personalised items can be returned within 7 days in original condition. Personalised items are made to order and can be returned only if damaged or defective. See our <a href="#policy/returns" data-route="policy" data-param="returns">returns policy</a>.</span></p>
+                </div>
+            </div>
+        </div>
+        <section class="related-section"><div class="section-header left"><h2><span data-cms="product.related">You may also like</span></h2></div><div id="relatedProductsGrid" class="product-grid"></div></section>
+        <section class="recent-section"><div class="section-header left"><h2><span data-cms="home.recent_title">Recently viewed</span></h2></div><div id="recentGridProduct" class="recent-grid"></div></section>
+    </div>
+</section>
+
+<!-- ---------- CATEGORIES ---------- -->
+<section id="pageCategories" class="page">
+    <div class="page-banner"><div class="container"><h1><span data-cms="categories.title">All categories</span></h1><p><span data-cms="categories.sub">Explore every collection.</span></p></div></div>
+    <div class="container section"><div id="categoriesPageGrid" class="category-grid"></div></div>
+</section>
+
+<!-- ---------- ABOUT ---------- -->
+<section id="pageAbout" class="page">
+    <div class="page-banner"><div class="container"><h1><span data-cms="about.title">About us</span></h1><p><span data-bind="branding.tagline">Elevate Your Memories</span></p></div></div>
+    <div class="container section about-grid">
+        <div class="glass about-card"><h2><span data-cms="about.h1">Our story</span></h2><p><span data-cms="about.p1">{brand} was created in Coimbatore with a simple belief: a gift should carry meaning. We design and craft personalised mementos that help people celebrate achievements, friendships, families and milestones.</span></p><p><span data-cms="about.p2">Every order is made to your specification, from the engraved name on an award to the caricature drawn from your photograph.</span></p></div>
+        <div class="about-values">
+            <article class="about-value-card glass"><i data-lucide="gem"></i><h3><span data-cms="about.v1t">Premium quality</span></h3><p><span data-cms="about.v1d">Carefully chosen materials and finishing on every piece.</span></p></article>
+            <article class="about-value-card glass"><i data-lucide="pen-line"></i><h3><span data-cms="about.v2t">Truly personal</span></h3><p><span data-cms="about.v2d">Your words, your photos, your design.</span></p></article>
+            <article class="about-value-card glass"><i data-lucide="heart-handshake"></i><h3><span data-cms="about.v3t">Honest service</span></h3><p><span data-cms="about.v3d">Clear pricing, proactive updates and real people to talk to.</span></p></article>
+        </div>
+    </div>
+</section>
+
+<!-- ---------- CONTACT ---------- -->
+<section id="pageContact" class="page">
+    <div class="page-banner"><div class="container"><h1><span data-cms="contact.title">Contact us</span></h1><p><span data-cms="contact.sub">Questions, bulk orders or a custom idea? We would love to hear from you.</span></p></div></div>
+    <div class="container section contact-grid">
+        <div class="contact-cards">
+            <a class="contact-info-card glass" data-href-bind="tel:contact.phone" href="tel:+916382052530"><i data-lucide="phone"></i><div><strong data-cms="contact.phone_l">Phone</strong><span data-bind="contact.phone"></span></div></a>
+            <a class="contact-info-card glass" data-href-bind="mailto:contact.email" href="mailto:bestowcbe@gmail.com"><i data-lucide="mail"></i><div><strong data-cms="contact.email_l">Email</strong><span data-bind="contact.email"></span></div></a>
+            <div class="contact-info-card glass"><i data-lucide="map-pin"></i><div><strong data-cms="contact.addr_l">Studio</strong><span data-bind="contact.address"></span></div></div>
+            <div class="contact-info-card glass"><i data-lucide="clock"></i><div><strong data-cms="contact.hours_l">Hours</strong><span data-bind="contact.business_hours"></span></div></div>
+            <button type="button" class="btn btn-whatsapp btn-lg" data-action="whatsapp-chat"><i data-lucide="message-circle"></i><span data-cms="contact.wa">Chat on WhatsApp</span></button>
+        </div>
+        <form id="contactForm" class="glass form-card" novalidate>
+            <h2><span data-cms="contact.form_title">Send a message</span></h2>
+            <div class="form-row"><div class="form-group half"><label for="contactName"><span data-cms="contact.f_name">Name</span> <span class="req">*</span></label><input id="contactName" type="text" required maxlength="80" autocomplete="name"></div>
+            <div class="form-group half"><label for="contactEmail"><span data-cms="contact.f_email">Email</span> <span class="req">*</span></label><input id="contactEmail" type="email" required maxlength="120" autocomplete="email"></div></div>
+            <div class="form-row"><div class="form-group half"><label for="contactPhone"><span data-cms="contact.f_phone">Phone</span></label><input id="contactPhone" type="tel" maxlength="20" autocomplete="tel"></div>
+            <div class="form-group half"><label for="contactType"><span data-cms="contact.f_type">Topic</span></label><select id="contactType"><option value="general">General</option><option value="bulk_order">Bulk order</option><option value="custom_design">Custom design</option><option value="support">Order support</option><option value="complaint">Complaint</option></select></div></div>
+            <div class="form-group"><label for="contactSubject"><span data-cms="contact.f_subject">Subject</span></label><input id="contactSubject" type="text" maxlength="140"></div>
+            <div class="form-group"><label for="contactMessage"><span data-cms="contact.f_message">Message</span> <span class="req">*</span></label><textarea id="contactMessage" rows="5" required maxlength="3000"></textarea></div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block"><i data-lucide="send"></i><span data-cms="contact.send">Send message</span></button>
+        </form>
+    </div>
+</section>
+
+<!-- ---------- TRACK ORDER ---------- -->
+<section id="pageTrackOrder" class="page">
+    <div class="page-banner"><div class="container"><h1><span data-cms="track.title">Track your order</span></h1><p><span data-cms="track.sub">Enter your order number and the email used at checkout.</span></p></div></div>
+    <div class="container section narrow">
+        <form id="trackOrderForm" class="glass form-card" novalidate>
+            <div class="form-group"><label for="trackOrderNumber"><span data-cms="track.number">Order number</span></label><input id="trackOrderNumber" type="text" required placeholder="BST-20260101-00001" autocomplete="off"></div>
+            <div class="form-group"><label for="trackOrderEmail"><span data-cms="track.email">Email address</span></label><input id="trackOrderEmail" type="email" required autocomplete="email"></div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block"><i data-lucide="search"></i><span data-cms="track.btn">Track order</span></button>
+        </form>
+        <div id="trackOrderResult" class="mt-lg"></div>
+    </div>
+</section>
+
+<!-- ---------- WISHLIST ---------- -->
+<section id="pageWishlist" class="page">
+    <div class="page-banner"><div class="container"><h1><span data-cms="wishlist.title">Your wishlist</span></h1></div></div>
+    <div class="container section">
+        <div id="wishlistGrid" class="product-grid"></div>
+        <div id="wishlistEmpty" class="empty-state glass" style="display:none"><i data-lucide="heart" class="empty-icon"></i><h3><span data-cms="wishlist.empty_title">Your wishlist is empty</span></h3><p><span data-cms="wishlist.empty_text">Tap the heart on any product to save it here.</span></p><a href="#shop" data-route="shop" class="btn btn-primary"><span data-cms="wishlist.browse">Browse products</span></a></div>
+    </div>
+</section>
+
+<!-- ---------- CHECKOUT ---------- -->
+<section id="pageCheckout" class="page">
+    <div class="page-banner"><div class="container"><h1><span data-cms="checkout.title">Checkout</span></h1></div></div>
+    <div class="container section">
+        <div id="checkoutEmpty" class="empty-state glass" style="display:none"><i data-lucide="shopping-bag" class="empty-icon"></i><h3><span data-cms="checkout.empty_title">Your cart is empty</span></h3><a href="#shop" data-route="shop" class="btn btn-primary"><span data-cms="checkout.continue">Continue shopping</span></a></div>
+        <div id="checkoutLayout" class="checkout-layout">
+            <form id="checkoutForm" class="checkout-form" novalidate>
+                <div id="checkoutGuestNote" class="notice glass-soft" style="display:none"><i data-lucide="info"></i><span><span data-cms="checkout.guest_note">You are checking out as a guest. Sign in to earn loyalty points and view your orders any time.</span> <button type="button" class="link-btn" data-action="login"><span data-cms="user.signin_short">Sign in</span></button></span></div>
+                <section class="glass form-card">
+                    <div class="card-head"><h2><span data-cms="checkout.contact">Contact details</span></h2><button type="button" id="savedAddressBtn" class="btn btn-ghost btn-sm" style="display:none"><i data-lucide="map-pinned"></i><span data-cms="checkout.use_saved">Use saved address</span></button></div>
+                    <div class="form-row"><div class="form-group half"><label for="checkoutName"><span data-cms="checkout.name">Full name</span> <span class="req">*</span></label><input id="checkoutName" type="text" required maxlength="80" autocomplete="name"></div>
+                    <div class="form-group half"><label for="checkoutPhone"><span data-cms="checkout.phone">Mobile number</span> <span class="req">*</span></label><input id="checkoutPhone" type="tel" required maxlength="15" autocomplete="tel"></div></div>
+                    <div class="form-group"><label for="checkoutEmail"><span data-cms="checkout.email">Email</span> <span class="req">*</span></label><input id="checkoutEmail" type="email" required maxlength="120" autocomplete="email"></div>
+                </section>
+                <section class="glass form-card">
+                    <h2><span data-cms="checkout.address">Delivery address</span></h2>
+                    <div class="form-group"><label for="checkoutAddress1"><span data-cms="checkout.addr1">Address line 1</span> <span class="req">*</span></label><input id="checkoutAddress1" type="text" required maxlength="140" autocomplete="address-line1"></div>
+                    <div class="form-group"><label for="checkoutAddress2"><span data-cms="checkout.addr2">Address line 2</span></label><input id="checkoutAddress2" type="text" maxlength="140" autocomplete="address-line2"></div>
+                    <div class="form-row three"><div class="form-group half"><label for="checkoutPincode"><span data-cms="checkout.pincode">Pincode</span> <span class="req">*</span></label><input id="checkoutPincode" type="text" inputmode="numeric" maxlength="6" required autocomplete="postal-code"></div>
+                    <div class="form-group half"><label for="checkoutCity"><span data-cms="checkout.city">City</span> <span class="req">*</span></label><input id="checkoutCity" type="text" required maxlength="60" autocomplete="address-level2"></div>
+                    <div class="form-group half"><label for="checkoutState"><span data-cms="checkout.state">State</span> <span class="req">*</span></label><input id="checkoutState" type="text" required maxlength="60" autocomplete="address-level1"></div></div>
+                    <div class="form-group"><label for="checkoutNotes"><span data-cms="checkout.notes">Order notes</span></label><textarea id="checkoutNotes" rows="2" maxlength="500"></textarea></div>
+                </section>
+                <section class="glass form-card">
+                    <h2><span data-cms="checkout.extras">Gift and rewards</span></h2>
+                    <label class="check-row"><input type="checkbox" id="giftWrapCheck"><span class="check-box"></span><span class="check-text"><strong data-cms="checkout.gift_wrap">Premium gift wrap</strong><small data-cms="checkout.gift_wrap_sub">Beautifully wrapped with a message card.</small></span></label>
+                    <div id="giftMessageWrap" class="form-group" style="display:none"><label for="giftMessage"><span data-cms="checkout.gift_msg">Gift message</span></label><textarea id="giftMessage" rows="2" maxlength="250"></textarea></div>
+                    <div id="pointsWrap" style="display:none"><label class="check-row"><input type="checkbox" id="usePointsCheck"><span class="check-box"></span><span class="check-text"><strong id="pointsLabel"></strong></span></label></div>
+                    <div class="coupon-box"><label for="couponCodeInput"><span data-cms="checkout.coupon">Coupon code</span></label>
+                        <div class="input-with-btn"><input id="couponCodeInput" type="text" maxlength="24" autocomplete="off" style="text-transform:uppercase"><button type="button" id="applyCouponBtn" class="btn btn-outline"><span data-cms="checkout.apply">Apply</span></button><button type="button" id="removeCouponBtn" class="btn btn-ghost" style="display:none"><span data-cms="checkout.remove">Remove</span></button></div>
+                        <p id="couponStatus" class="coupon-status" aria-live="polite"></p></div>
+                </section>
+            </form>
+            <aside class="checkout-summary glass-strong">
+                <h2><span data-cms="checkout.summary">Order summary</span></h2>
+                <div id="checkoutItems" class="summary-items"></div>
+                <dl class="summary-lines">
+                    <div><dt data-cms="checkout.subtotal">Subtotal</dt><dd id="checkoutSubtotal"></dd></div>
+                    <div id="checkoutDiscountRow" style="display:none"><dt data-cms="checkout.discount">Coupon discount</dt><dd id="checkoutDiscount"></dd></div>
+                    <div id="checkoutPointsRow" style="display:none"><dt data-cms="checkout.points">Points redeemed</dt><dd id="checkoutPoints"></dd></div>
+                    <div id="checkoutGiftRow" style="display:none"><dt data-cms="checkout.gift">Gift wrap</dt><dd id="checkoutGift"></dd></div>
+                    <div><dt data-cms="checkout.shipping">Shipping</dt><dd id="checkoutShipping"></dd></div>
+                    <div><dt><span data-cms="checkout.gst">GST</span> (<span id="checkoutTaxLabel">18</span>%)</dt><dd id="checkoutTax"></dd></div>
+                    <div class="total"><dt data-cms="checkout.total">Total</dt><dd id="checkoutTotal"></dd></div>
+                </dl>
+                <p id="checkoutShipNote" class="summary-note"></p>
+                <button type="submit" form="checkoutForm" id="payNowBtn" class="btn btn-primary btn-lg btn-block"><i data-lucide="lock"></i><span data-cms="checkout.pay">Pay securely</span></button>
+                <p class="secure-note"><i data-lucide="shield-check"></i><span data-cms="checkout.secure">Payments are processed by Razorpay. We never see your card details.</span></p>
+            </aside>
+        </div>
+    </div>
+</section>
+
+<!-- ---------- ORDER SUCCESS ---------- -->
+<section id="pageSuccess" class="page"><div class="container section narrow"><div id="successContent" class="glass-strong success-card"></div></div></section>
+
+<!-- ---------- ACCOUNT ---------- -->
+<section id="pageAccount" class="page">
+    <div class="page-banner"><div class="container"><h1><span data-cms="account.title">My account</span></h1></div></div>
+    <div class="container section account-layout">
+        <aside class="account-side glass">
+            <div class="account-user"><div id="accountAvatar" class="account-avatar"></div><div><strong id="accountUserName"></strong><span id="accountUserEmail"></span></div></div>
+            <nav class="account-nav">
+                <button type="button" class="account-nav-btn active" data-account-tab="profile"><i data-lucide="user"></i><span data-cms="account.t_profile">Profile</span></button>
+                <button type="button" class="account-nav-btn" data-account-tab="orders"><i data-lucide="package"></i><span data-cms="account.t_orders">Orders</span></button>
+                <button type="button" class="account-nav-btn" data-account-tab="reviews"><i data-lucide="star"></i><span data-cms="account.t_reviews">My reviews</span></button>
+                <button type="button" class="account-nav-btn" data-account-tab="addresses"><i data-lucide="map-pin"></i><span data-cms="account.t_address">Address</span></button>
+                <button type="button" class="account-nav-btn" data-account-tab="loyalty"><i data-lucide="gem"></i><span data-cms="account.t_loyalty">Rewards</span><em class="count-badge static js-points-badge">0</em></button>
+                <button type="button" class="account-nav-btn" data-action="logout"><i data-lucide="log-out"></i><span data-cms="account.signout">Sign out</span></button>
+            </nav>
+        </aside>
+        <div class="account-main">
+            <div id="accountTabProfile" class="account-tab active glass form-card">
+                <h2><span data-cms="account.profile_title">Profile</span></h2>
+                <div class="avatar-edit"><label class="btn btn-outline btn-sm" for="avatarInput"><i data-lucide="camera"></i><span data-cms="account.change_photo">Change photo</span></label><input type="file" id="avatarInput" accept="image/*" class="file-input-hidden"></div>
+                <form id="profileForm" novalidate>
+                    <div class="form-row"><div class="form-group half"><label for="profileName"><span data-cms="account.name">Full name</span></label><input id="profileName" type="text" maxlength="80" autocomplete="name"></div>
+                    <div class="form-group half"><label for="profilePhone"><span data-cms="account.phone">Mobile number</span></label><input id="profilePhone" type="tel" maxlength="15" autocomplete="tel"></div></div>
+                    <div class="form-group"><label for="profileEmail"><span data-cms="account.email">Email</span></label><input id="profileEmail" type="email" disabled></div>
+                    <div class="form-actions"><button type="submit" class="btn btn-primary"><i data-lucide="save"></i><span data-cms="account.save">Save changes</span></button><button type="button" id="changePasswordBtn" class="btn btn-outline"><i data-lucide="key-round"></i><span data-cms="account.change_pw">Change password</span></button></div>
+                </form>
+            </div>
+            <div id="accountTabOrders" class="account-tab"><h2><span data-cms="account.orders_title">Your orders</span></h2><div id="customerOrdersList"></div><div id="customerOrdersEmpty" class="empty-state glass" style="display:none"><i data-lucide="package" class="empty-icon"></i><h3><span data-cms="account.no_orders">No orders yet</span></h3><a href="#shop" data-route="shop" class="btn btn-primary"><span data-cms="account.start_shopping">Start shopping</span></a></div></div>
+            <div id="accountTabReviews" class="account-tab"><h2><span data-cms="account.reviews_title">Your reviews</span></h2><div id="customerReviewsList"></div><div id="customerReviewsEmpty" class="empty-state glass" style="display:none"><i data-lucide="star" class="empty-icon"></i><h3><span data-cms="account.no_reviews">You have not written any reviews</span></h3></div></div>
+            <div id="accountTabAddresses" class="account-tab glass form-card">
+                <h2><span data-cms="account.address_title">Saved address</span></h2>
+                <form id="addressForm" novalidate>
+                    <div class="form-group"><label for="addressLine1"><span data-cms="checkout.addr1">Address line 1</span></label><input id="addressLine1" type="text" maxlength="140" autocomplete="address-line1"></div>
+                    <div class="form-group"><label for="addressLine2"><span data-cms="checkout.addr2">Address line 2</span></label><input id="addressLine2" type="text" maxlength="140" autocomplete="address-line2"></div>
+                    <div class="form-row three"><div class="form-group half"><label for="addressPincode"><span data-cms="checkout.pincode">Pincode</span></label><input id="addressPincode" type="text" inputmode="numeric" maxlength="6"></div><div class="form-group half"><label for="addressCity"><span data-cms="checkout.city">City</span></label><input id="addressCity" type="text" maxlength="60"></div><div class="form-group half"><label for="addressState"><span data-cms="checkout.state">State</span></label><input id="addressState" type="text" maxlength="60"></div></div>
+                    <button type="submit" class="btn btn-primary"><i data-lucide="save"></i><span data-cms="account.save_address">Save address</span></button>
+                </form>
+            </div>
+            <div id="accountTabLoyalty" class="account-tab"><h2><span data-cms="account.loyalty_title">Rewards</span></h2><div id="loyaltyBox"></div></div>
+        </div>
+    </div>
+</section>
+
+<!-- ---------- FAQ / POLICY / UNSUBSCRIBE ---------- -->
+<section id="pageFaq" class="page"><div class="page-banner"><div class="container"><h1><span data-cms="faq.title">Frequently asked questions</span></h1></div></div><div class="container section narrow"><div id="faqList" class="faq-list"></div></div></section>
+<section id="pagePolicy" class="page"><div class="page-banner"><div class="container"><h1><span data-cms="policy.title">Policies</span></h1></div></div><div class="container section policy-layout"><nav id="policyNav" class="policy-nav glass" aria-label="Policies"></nav><article id="policyContent" class="policy-content glass prose"></article></div></section>
+<section id="pageUnsubscribe" class="page"><div class="container section narrow"><div id="unsubContent" class="glass-strong success-card"></div></div></section>
+
+<!-- ---------- ADMIN ---------- -->
+<section id="pageAdminLogin" class="page admin-login-page">
+    <div class="admin-login-card glass-strong">
+        <img data-logo="auto" alt="Bestow" class="admin-login-logo" src="https://res.cloudinary.com/j1fhagji/image/upload/v1791879105/Bestow_ColourAsset_1_2x-8.png">
+        <span class="admin-login-badge"><i data-lucide="shield-check"></i> Administrator access</span>
+        <h1>Admin sign in</h1>
+        <p class="text-muted">This portal is for store administrators only. Customers sign in from the main website.</p>
+        <form id="adminLoginForm" novalidate>
+            <div class="form-group"><label for="adminLoginEmail">Admin email</label><input id="adminLoginEmail" type="email" required autocomplete="username"></div>
+            <div class="form-group"><label for="adminLoginPassword">Password</label><div class="pw-field"><input id="adminLoginPassword" type="password" required autocomplete="current-password"><button type="button" class="password-toggle icon-btn icon-btn-sm" data-target="adminLoginPassword" aria-label="Show password"><i data-lucide="eye"></i></button></div></div>
+            <p id="adminLoginError" class="form-error" role="alert" hidden></p>
+            <button type="submit" class="btn btn-primary btn-lg btn-block">Sign in to dashboard</button>
+        </form>
+        <a href="#home" data-route="home" class="admin-login-back"><i data-lucide="arrow-left"></i> Back to store</a>
+    </div>
+</section>
+
+<section id="pageAdmin" class="page admin-page">
+    <div id="adminBackdrop" class="admin-backdrop"></div>
+    <div class="admin-shell">
+        <aside id="adminSidebar" class="admin-sidebar glass-strong">
+            <a class="admin-brand" href="#home" data-route="home"><img data-logo="auto" alt="Bestow" src="https://res.cloudinary.com/j1fhagji/image/upload/v1791879105/Bestow_ColourAsset_1_2x-8.png"></a>
+            <nav id="adminNav" class="admin-nav" aria-label="Admin"></nav>
+        </aside>
+        <div class="admin-main">
+            <header class="admin-topbar glass">
+                <button type="button" id="adminMenuBtn" class="icon-btn" aria-label="Toggle menu"><i data-lucide="menu"></i></button>
+                <h1 id="adminTitle">Dashboard</h1>
+                <form id="adminSearchForm" class="admin-search" role="search"><i data-lucide="search"></i><input id="adminSearchInput" type="search" placeholder="Search orders, products, customers" aria-label="Search admin"></form>
+                <div class="admin-top-actions">
+                    <button type="button" id="adminSoundBtn" class="icon-btn" aria-label="Toggle order alert sound" aria-pressed="true"><i data-lucide="bell-ring"></i></button>
+                    <button type="button" id="adminLiveEditBtn" class="btn btn-outline btn-sm"><i data-lucide="pencil"></i><span>Edit site</span></button>
+                    <button type="button" id="adminExitBtn" class="btn btn-ghost btn-sm"><i data-lucide="external-link"></i><span>View store</span></button>
+                </div>
+            </header>
+            <div id="adminContent" class="admin-content"></div>
+        </div>
+    </div>
+</section>
+
+</main>
+
+<!-- ============================== FOOTER ============================== -->
+<footer class="site-footer">
+    <div class="container footer-cta">
+        <div><h3><span data-cms="footer.cta_title">Make your next gift unforgettable</span></h3><p><span data-cms="footer.cta_sub">Personalised awards, frames, keychains and more, made to order in Coimbatore.</span></p></div>
+        <a href="#shop" data-route="shop" class="btn btn-primary btn-lg"><span data-cms="footer.cta_btn">Start shopping</span><i data-lucide="arrow-right"></i></a>
+    </div>
+    <div class="container footer-grid">
+        <div class="footer-brand"><img data-logo="white" alt="Bestow" class="footer-logo" src="https://res.cloudinary.com/j1fhagji/image/upload/f_auto/q_auto/Bestow_WhiteAsset_3_2x-8.png">
+            <p class="footer-tag"><span data-bind="branding.tagline">Elevate Your Memories</span></p>
+            <p><span data-cms="footer.about">Premium customised gifts crafted with care. Every piece is made to order with your names, words and photos.</span></p>
+            <div class="social-row">
+                <a data-social="facebook" href="#" target="_blank" rel="noopener" aria-label="Facebook"><svg class="lucide" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13.5 22v-8.2h2.8l.5-3.3h-3.3V8.4c0-.9.4-1.7 1.8-1.7h1.6V3.8s-1.3-.2-2.5-.2c-2.6 0-4.3 1.6-4.3 4.4v2.5H7.3v3.3h2.8V22h3.4z"/></svg></a>
+                <a data-social="instagram" href="#" target="_blank" rel="noopener" aria-label="Instagram"><svg class="lucide" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.3" cy="6.7" r="1" fill="currentColor" stroke="none"/></svg></a>
+                <a data-social="twitter" href="#" target="_blank" rel="noopener" aria-label="Twitter"><svg class="lucide" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M17.8 3h3.1l-6.8 7.8L22 21h-6.2l-4.9-6.4L5.3 21H2.2l7.3-8.3L2 3h6.4l4.4 5.8L17.8 3zm-1.1 16.2h1.7L7.4 4.7H5.6l11.1 14.5z"/></svg></a>
+                <a data-social="youtube" href="#" target="_blank" rel="noopener" aria-label="YouTube"><svg class="lucide" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M21.6 7.2a2.5 2.5 0 0 0-1.8-1.8C18.2 5 12 5 12 5s-6.2 0-7.8.4A2.5 2.5 0 0 0 2.4 7.2C2 8.8 2 12 2 12s0 3.2.4 4.8a2.5 2.5 0 0 0 1.8 1.8C5.8 19 12 19 12 19s6.2 0 7.8-.4a2.5 2.5 0 0 0 1.8-1.8c.4-1.6.4-4.8.4-4.8s0-3.2-.4-4.8zM10 15V9l5.2 3L10 15z"/></svg></a>
+                <a href="#contact" data-route="contact" aria-label="Contact" class="social-contact"><i data-lucide="mail"></i></a>
+            </div></div>
+        <div><h3><span data-cms="footer.shop">Shop</span></h3><ul id="footerCategories" class="footer-links"></ul>
+            <ul class="footer-links footer-links-extra"><li><a href="#shop" data-route="shop"><i data-lucide="chevron-right"></i><span data-cms="footer.all_products">All products</span></a></li><li><a href="#categories" data-route="categories"><i data-lucide="chevron-right"></i><span data-cms="footer.all_categories">All categories</span></a></li><li><a href="#wishlist" data-route="wishlist"><i data-lucide="chevron-right"></i><span data-cms="nav.wishlist">Wishlist</span></a></li></ul></div>
+        <div><h3><span data-cms="footer.help">Help</span></h3><ul class="footer-links">
+            <li><a href="#track-order" data-route="track-order"><i data-lucide="map-pin"></i><span data-cms="nav.track">Track order</span></a></li>
+            <li><a href="#faq" data-route="faq"><i data-lucide="chevron-right"></i><span data-cms="nav.faq">FAQ</span></a></li>
+            <li><a href="#about" data-route="about"><i data-lucide="chevron-right"></i><span data-cms="nav.about">About us</span></a></li>
+            <li><a href="#contact" data-route="contact"><i data-lucide="chevron-right"></i><span data-cms="nav.contact">Contact</span></a></li>
+            <li><a href="#policy/shipping" data-route="policy" data-param="shipping"><i data-lucide="chevron-right"></i><span data-cms="footer.shipping">Shipping policy</span></a></li>
+            <li><a href="#policy/returns" data-route="policy" data-param="returns"><i data-lucide="chevron-right"></i><span data-cms="footer.returns">Returns and refunds</span></a></li>
+            <li><a href="#policy/privacy" data-route="policy" data-param="privacy"><i data-lucide="chevron-right"></i><span data-cms="footer.privacy">Privacy policy</span></a></li>
+            <li><a href="#policy/terms" data-route="policy" data-param="terms"><i data-lucide="chevron-right"></i><span data-cms="footer.terms">Terms of service</span></a></li></ul></div>
+        <div><h3><span data-cms="footer.contact">Contact</span></h3><ul class="footer-links footer-contact">
+            <li><i data-lucide="phone"></i><a data-href-bind="tel:contact.phone" href="tel:+916382052530"><span data-bind="contact.phone">+91 63820 52530</span></a></li>
+            <li><i data-lucide="mail"></i><a data-href-bind="mailto:contact.email" href="mailto:bestowcbe@gmail.com"><span data-bind="contact.email">bestowcbe@gmail.com</span></a></li>
+            <li><i data-lucide="map-pin"></i><span data-bind="contact.address">Coimbatore, Tamil Nadu, India</span></li>
+            <li><i data-lucide="clock"></i><span data-bind="contact.business_hours">Mon - Sat: 9:00 AM - 7:00 PM</span></li></ul>
+            <form class="js-newsletter-form footer-news" novalidate><label class="sr-only" for="footerNewsEmail"><span data-cms="news.placeholder_label">Email address</span></label><input id="footerNewsEmail" type="email" name="email" required placeholder="Your email for updates" data-cms-ph="footer.news_ph" autocomplete="email"><button type="submit" class="btn btn-primary btn-sm" aria-label="Subscribe"><i data-lucide="send"></i></button></form></div>
+    </div>
+    <div class="container footer-pay"><span class="footer-pay-label"><i data-lucide="shield-check"></i><span data-cms="footer.secure">Secure payments by Razorpay</span></span><ul><li>UPI</li><li>Cards</li><li>Net banking</li><li>Wallets</li></ul></div>
+    <div class="container footer-bottom"><p>&copy; <span data-cms="footer.copy">{year} {brand}. All rights reserved.</span></p><div class="footer-bottom-links"><a href="#track-order" data-route="track-order"><span data-cms="nav.track">Track order</span></a><button type="button" class="link-btn" data-action="admin-login"><i data-lucide="shield-check"></i> <span data-cms="footer.admin">Admin login</span></button></div></div>
+</footer>
+
+<!-- ============================== BOTTOM NAV ============================== -->
+<nav class="bottom-nav glass" aria-label="Quick navigation">
+    <a class="bottom-nav-item" href="#home" data-route="home"><i data-lucide="home"></i><span data-cms="nav.home">Home</span></a>
+    <a class="bottom-nav-item" href="#shop" data-route="shop"><i data-lucide="gift"></i><span data-cms="nav.shop">Shop</span></a>
+    <button type="button" class="bottom-nav-item js-search-open"><i data-lucide="search"></i><span data-cms="a11y.search_short">Search</span></button>
+    <button type="button" class="bottom-nav-item js-cart-btn"><i data-lucide="shopping-bag"></i><span data-cms="a11y.cart_short">Cart</span><em class="count-badge static js-cart-count">0</em></button>
+    <a class="bottom-nav-item" href="#account" data-route="account"><i data-lucide="user"></i><span data-cms="a11y.account_short">Account</span></a>
+</nav>
+
+<!-- ============================== CART ============================== -->
+<div id="cartOverlay" class="drawer-overlay"></div>
+<aside id="cartSidebar" class="cart-sidebar glass-strong" aria-label="Shopping cart" aria-hidden="true">
+    <div class="cart-head"><h2><i data-lucide="shopping-bag"></i><span data-cms="cart.title">Your cart</span></h2><button type="button" id="cartCloseBtn" class="icon-btn" aria-label="Close cart" data-cms-title="a11y.close_cart"><i data-lucide="x"></i></button></div>
+    <div id="cartShipBar" class="ship-bar"><p id="cartShipText"></p><div class="ship-track"><span id="cartShipFill" class="ship-fill"></span></div></div>
+    <div id="cartItemsList" class="cart-items"></div>
+    <div id="cartEmpty" class="empty-state" style="display:none"><i data-lucide="shopping-bag" class="empty-icon"></i><h3><span data-cms="cart.empty">Your cart is empty</span></h3><a href="#shop" data-route="shop" class="btn btn-primary"><span data-cms="cart.start">Start shopping</span></a></div>
+    <div id="cartSidebarFooter" class="cart-footer">
+        <div class="cart-subtotal"><span data-cms="cart.subtotal">Subtotal</span><strong id="cartSubtotal"></strong></div>
+        <p class="cart-note"><span data-cms="cart.note">Shipping and GST are calculated at checkout.</span></p>
+        <button type="button" id="checkoutBtn" class="btn btn-primary btn-lg btn-block"><i data-lucide="lock"></i><span data-cms="cart.checkout">Checkout</span></button>
+        <button type="button" id="cartWhatsAppBtn" class="btn btn-whatsapp btn-block"><i data-lucide="message-circle"></i><span data-cms="cart.whatsapp">Order via WhatsApp</span></button>
+    </div>
+</aside>
+
+<!-- ============================== FLOATING ============================== -->
+<button type="button" id="whatsappFloat" class="whatsapp-float" aria-label="Chat on WhatsApp" data-cms-title="a11y.whatsapp"><i data-lucide="message-circle"></i></button>
+<button type="button" id="scrollToTop" class="scroll-top glass" aria-label="Back to top" data-cms-title="a11y.top"><i data-lucide="arrow-up"></i></button>
+
+<div id="compareTray" class="compare-tray glass-strong"><span id="compareTrayText"></span><div><button type="button" id="compareOpenBtn" class="btn btn-primary btn-sm"><span data-cms="compare.open">Compare</span></button><button type="button" id="compareClearBtn" class="btn btn-ghost btn-sm"><span data-cms="compare.clear">Clear</span></button></div></div>
+
+<div id="cookieNotice" class="cookie-notice glass-strong" role="dialog" aria-label="Cookies"><p><span data-cms="cookie.text">We use essential storage to keep your cart and preferences. By continuing you agree to this.</span></p><button type="button" id="cookieAccept" class="btn btn-primary btn-sm"><span data-cms="cookie.accept">Got it</span></button></div>
+
+<div id="liveEditPill" class="live-edit-pill glass-strong"><i data-lucide="pencil"></i><span>Live editing: click any text or logo</span><button type="button" id="liveEditExit" class="btn btn-primary btn-sm">Done</button></div>
+
+<div id="payingOverlay" class="paying-overlay"><div class="glass-strong paying-card"><span class="spinner spinner-lg"></span><h3 id="payingTitle"></h3><p id="payingText"></p></div></div>
+
+<div id="toastContainer" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+<!-- ============================== MODALS ============================== -->
+<div id="authModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="authModalTitle">
+    <div class="modal modal-sm glass-strong">
+        <button type="button" class="modal-close icon-btn" data-close-modal aria-label="Close"><i data-lucide="x"></i></button>
+        <div class="modal-head center"><img data-logo="auto" alt="Bestow" class="modal-logo" src="https://res.cloudinary.com/j1fhagji/image/upload/v1791879105/Bestow_ColourAsset_1_2x-8.png"><h2 id="authModalTitle"></h2><p id="authModalSubtitle"></p></div>
+        <form id="loginForm" novalidate>
+            <div class="form-group"><label for="loginEmail"><span data-cms="auth.email">Email</span></label><input id="loginEmail" type="email" required autocomplete="email"></div>
+            <div class="form-group"><label for="loginPassword"><span data-cms="auth.password">Password</span></label><div class="pw-field"><input id="loginPassword" type="password" required autocomplete="current-password"><button type="button" class="password-toggle icon-btn icon-btn-sm" data-target="loginPassword" aria-label="Show password"><i data-lucide="eye"></i></button></div></div>
+            <button type="button" id="forgotLink" class="link-btn"><span data-cms="auth.forgot">Forgot password?</span></button>
+            <button type="submit" class="btn btn-primary btn-lg btn-block"><span data-cms="auth.signin">Sign in</span></button>
+        </form>
+        <form id="registerForm" novalidate style="display:none">
+            <div class="form-group"><label for="registerName"><span data-cms="auth.name">Full name</span></label><input id="registerName" type="text" required maxlength="80" autocomplete="name"></div>
+            <div class="form-row"><div class="form-group half"><label for="registerEmail"><span data-cms="auth.email">Email</span></label><input id="registerEmail" type="email" required autocomplete="email"></div><div class="form-group half"><label for="registerPhone"><span data-cms="auth.phone">Mobile</span></label><input id="registerPhone" type="tel" maxlength="15" autocomplete="tel"></div></div>
+            <div class="form-group"><label for="registerPassword"><span data-cms="auth.password">Password</span></label><div class="pw-field"><input id="registerPassword" type="password" required minlength="8" autocomplete="new-password"><button type="button" class="password-toggle icon-btn icon-btn-sm" data-target="registerPassword" aria-label="Show password"><i data-lucide="eye"></i></button></div></div>
+            <div class="form-group"><label for="registerConfirmPassword"><span data-cms="auth.confirm">Confirm password</span></label><input id="registerConfirmPassword" type="password" required minlength="8" autocomplete="new-password"></div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block"><span data-cms="auth.create">Create account</span></button>
+        </form>
+        <form id="forgotForm" novalidate style="display:none">
+            <div class="form-group"><label for="forgotEmail"><span data-cms="auth.email">Email</span></label><input id="forgotEmail" type="email" required autocomplete="email"></div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block"><span data-cms="auth.send_reset">Send reset link</span></button>
+            <button type="button" id="backToLogin" class="link-btn center-block"><span data-cms="auth.back">Back to sign in</span></button>
+        </form>
+        <p id="authSwitchWrap" class="auth-switch"><span id="authSwitchText"></span> <button type="button" id="authSwitchBtn" class="link-btn"></button></p>
+    </div>
+</div>
+
+<div id="returnModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="returnTitle">
+    <div class="modal modal-sm glass-strong"><button type="button" class="modal-close icon-btn" data-close-modal aria-label="Close"><i data-lucide="x"></i></button>
+        <div class="modal-head"><h2 id="returnTitle">Return or exchange</h2><p>Order <strong id="returnOrderNumber"></strong></p></div>
+        <form id="returnForm" novalidate>
+            <input type="hidden" name="order_id">
+            <div class="seg seg-full" role="radiogroup" aria-label="Request type">
+                <label class="seg-btn"><input type="radio" name="request_type" value="return" checked> Return</label>
+                <label class="seg-btn"><input type="radio" name="request_type" value="exchange"> Exchange</label>
+            </div>
+            <div class="form-group"><label for="returnReason">Reason</label><select id="returnReason" name="reason" required><option value="">Choose a reason</option><option>Item arrived damaged</option><option>Wrong item received</option><option>Personalisation is incorrect</option><option>Quality is not as expected</option><option>Changed my mind</option><option>Other</option></select></div>
+            <div class="form-group"><label for="returnDetails">Details</label><textarea id="returnDetails" name="details" rows="3" maxlength="1500" placeholder="Tell us what happened"></textarea></div>
+            <button type="submit" class="btn btn-primary btn-lg btn-block">Send request</button>
+        </form>
+    </div>
+</div>
+
+<div id="confirmModal" class="modal-overlay" aria-hidden="true" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle">
+    <div class="modal modal-sm glass-strong"><div class="modal-head"><h2 id="confirmTitle"></h2><p id="confirmMessage"></p></div>
+        <div class="modal-actions"><button type="button" id="confirmCancel" class="btn btn-ghost">Cancel</button><button type="button" id="confirmOk" class="btn btn-primary">Confirm</button></div></div>
+</div>
+
+<div id="promptModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="promptTitle">
+    <div class="modal glass-strong"><button type="button" class="modal-close icon-btn" data-close-modal aria-label="Close"><i data-lucide="x"></i></button>
+        <div class="modal-head"><h2 id="promptTitle"></h2><p id="promptHint"></p></div>
+        <form id="promptForm" novalidate><div id="promptFieldWrap" class="form-group"></div>
+            <div class="modal-actions"><button type="button" id="promptCancel" class="btn btn-ghost">Cancel</button><button type="submit" id="promptOk" class="btn btn-primary">Save</button></div></form></div>
+</div>
+
+<div id="reviewModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="reviewModalTitle">
+    <div class="modal glass-strong"><button type="button" class="modal-close icon-btn" data-close-modal aria-label="Close"><i data-lucide="x"></i></button>
+        <div class="modal-head"><h2 id="reviewModalTitle"><span data-cms="review.title">Write a review</span></h2><p id="reviewProductName"></p></div>
+        <form id="reviewForm" novalidate>
+            <input type="hidden" id="reviewProductId"><input type="hidden" id="reviewOrderId"><input type="hidden" id="reviewRating" value="5">
+            <div class="form-group"><label><span data-cms="review.rating">Your rating</span></label>
+                <div id="starRatingInput" class="star-input" role="radiogroup" aria-label="Rating">
+                    <button type="button" class="star-btn" data-rating="1" aria-label="1 star"><i data-lucide="star"></i></button><button type="button" class="star-btn" data-rating="2" aria-label="2 stars"><i data-lucide="star"></i></button><button type="button" class="star-btn" data-rating="3" aria-label="3 stars"><i data-lucide="star"></i></button><button type="button" class="star-btn" data-rating="4" aria-label="4 stars"><i data-lucide="star"></i></button><button type="button" class="star-btn" data-rating="5" aria-label="5 stars"><i data-lucide="star"></i></button></div></div>
+            <div class="form-group"><label for="reviewTitle"><span data-cms="review.headline">Headline</span></label><input id="reviewTitle" type="text" maxlength="100"></div>
+            <div class="form-group"><label for="reviewComment"><span data-cms="review.comment">Your review</span></label><textarea id="reviewComment" rows="4" maxlength="2000" required></textarea></div>
+            <div class="form-group"><label class="file-drop" for="reviewImageInput"><i data-lucide="image-plus"></i><span data-cms="review.photos">Add up to 4 photos</span></label><input id="reviewImageInput" type="file" accept="image/*" multiple class="file-input-hidden"><div id="reviewUploadedImages" class="thumb-grid"></div></div>
+            <div class="modal-actions"><button type="button" class="btn btn-ghost" data-close-modal><span data-cms="common.cancel">Cancel</span></button><button type="submit" class="btn btn-primary"><span data-cms="review.submit">Submit review</span></button></div>
+        </form></div>
+</div>
+
+<div id="quickViewModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Quick view">
+    <div class="modal modal-wide glass-strong"><button type="button" class="modal-close icon-btn" data-close-modal aria-label="Close"><i data-lucide="x"></i></button><div id="quickViewContent"></div></div>
+</div>
+
+<div id="compareModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Compare products">
+    <div class="modal modal-wide glass-strong"><button type="button" class="modal-close icon-btn" data-close-modal aria-label="Close"><i data-lucide="x"></i></button><div class="modal-head"><h2><span data-cms="compare.title">Compare products</span></h2></div><div id="compareContent"></div></div>
+</div>
+
+<div id="cmdPalette" class="modal-overlay modal-top" aria-hidden="true" role="dialog" aria-modal="true" aria-label="Quick actions">
+    <div class="modal cmd-modal glass-strong"><div class="cmd-input-wrap"><i data-lucide="command"></i><input id="cmdInput" type="text" autocomplete="off" placeholder="Type a command or page name" data-cms-ph="cmd.placeholder" aria-label="Command"><kbd>Esc</kbd></div><div id="cmdList" class="cmd-list"></div></div>
+</div>
+
+<div id="adminModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="adminModalTitle">
+    <div class="modal glass-strong"><button type="button" class="modal-close icon-btn" data-close-modal aria-label="Close"><i data-lucide="x"></i></button><div class="modal-head"><h2 id="adminModalTitle"></h2></div><div id="adminModalBody" class="modal-body"></div></div>
+</div>
+
+<div id="lightbox" class="lightbox" aria-hidden="true" role="dialog" aria-label="Image viewer">
+    <button type="button" id="lightboxClose" class="icon-btn lightbox-close" aria-label="Close"><i data-lucide="x"></i></button>
+    <button type="button" id="lightboxPrev" class="icon-btn lightbox-nav prev" aria-label="Previous"><i data-lucide="chevron-left"></i></button>
+    <img id="lightboxImg" alt="">
+    <button type="button" id="lightboxNext" class="icon-btn lightbox-nav next" aria-label="Next"><i data-lucide="chevron-right"></i></button>
+</div>
+
+<!-- ============================== SCRIPTS ============================== -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<script src="https://checkout.razorpay.com/v1/checkout.js" async></script>
+<script src="js/supabase.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/cms.js"></script>
+<script src="js/router.js"></script>
+<script src="js/cart.js"></script>
+<script src="js/shop.js"></script>
+<script src="js/razorpay.js"></script>
+<script src="js/whatsapp.js"></script>
+<script src="js/reviews.js"></script>
+<script src="js/orders.js"></script>
+<script src="js/features.js"></script>
+<script src="js/admin.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
