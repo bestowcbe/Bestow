@@ -110,7 +110,11 @@
 
     async function sendMail(body, okMsg) {
         var r = await API.fn('send-email', body);
-        if (r.error || (r.data && r.data.ok === false)) { UI.toast('Email not sent: ' + ((r.error && r.error.message) || (r.data && r.data.message) || (r.data && r.data.detail) || 'unknown error'), 'error', 5000); return false; }
+        if (r.error || (r.data && r.data.ok === false)) {
+            var why = String((r.error && r.error.message) || (r.data && (r.data.message || r.data.detail)) || 'unknown error');
+            if (/GAS_WEBAPP_URL|GAS_SECRET/.test(why)) why = 'The email service is not connected yet. Add the GAS_WEBAPP_URL and GAS_SECRET secrets in Supabase, then try again.';
+            UI.toast('Email not sent: ' + why, 'error', 7000); return false;
+        }
         if (okMsg) UI.toast(okMsg, 'success');
         return r.data || true;
     }
@@ -795,6 +799,7 @@
         var alerts = await API.stockAlerts.all();
         var rows = r.data || [];
         el.innerHTML = head('Email Centre', 'Every email the store sends is recorded here') +
+            '<section class="admin-card glass setup-note"><h3>Connect your email service</h3><ol class="setup-steps"><li>Open your Google Apps Script project and run <strong>setup()</strong> once. Copy the WEBHOOK_SECRET it prints.</li><li>Deploy it as a Web app (Execute as: Me, Access: Anyone) and copy the /exec address.</li><li>In Supabase, set the secrets <strong>GAS_WEBAPP_URL</strong> and <strong>GAS_SECRET</strong>, then send a test email below.</li></ol></section>' +
             '<div class="admin-grid-2"><section class="admin-card glass"><h3>Send a test email</h3><p class="text-muted">Checks that your Google Apps Script web app is connected and the template design is correct.</p><form id="testEmailForm" class="admin-form" novalidate>' + fld('Send to', 'to', (AppState.user && AppState.user.email) || Bestow.contact.email, { type: 'email', req: true }) + '<button type="submit" class="btn btn-primary">' + UI.icon('send', 'icon-sm') + ' Send test</button></form></section>' +
             '<section class="admin-card glass"><h3>Back in stock requests</h3>' + ((alerts.data || []).length ? '<ul class="mini-list scroll-list">' + alerts.data.slice(0, 40).map(function (a) { return '<li><div class="mini-row static"><span><strong>' + esc(a.email) + '</strong><small>' + esc(a.products ? a.products.name : '') + '</small></span>' + (a.notified ? badge('Notified', 'success') : badge('Waiting', 'warning')) + '</div></li>'; }).join('') + '</ul>' : '<p class="text-muted">No requests yet.</p>') + '</section></div>' +
             '<section class="admin-card glass"><h3>Recent emails</h3>' + (rows.length ? '<div class="table-wrap"><table class="admin-table"><thead><tr><th>When</th><th>To</th><th>Type</th><th>Result</th></tr></thead><tbody>' + rows.map(function (m) {
