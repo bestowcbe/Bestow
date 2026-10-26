@@ -141,7 +141,7 @@
 
         badge: function () {
             var n = totals().count;
-            document.querySelectorAll('.js-cart-count').forEach(function (b) { b.textContent = n > 99 ? '99+' : n; b.classList.toggle('visible', n > 0); });
+            document.querySelectorAll('.js-cart-count').forEach(function (b) { b.textContent = n > 99 ? '99+' : n; b.classList.toggle('visible', n > 0); b.classList.remove('bump'); void b.offsetWidth; if (n > 0) b.classList.add('bump'); });
         },
 
         czSummary: function (cz) {
