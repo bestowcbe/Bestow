@@ -222,9 +222,9 @@
         var catName = p.categories ? p.categories.name : '';
         var href = '#product/' + encodeURIComponent(p.id);
         var badges = '';
-        if (out) badges += '<span class="badge-pill badge-dark">' + TX('shop.out') + '</span>';
-        else if (pct) badges += '<span class="badge-pill badge-red">' + TX('shop.sale', { pct: pct }) + '</span>';
-        if (!out && p.is_featured) badges += '<span class="badge-pill badge-glass">' + TX('shop.featured') + '</span>';
+        if (out) badges += '<span class="badge-pill badge-dark">' + UI.icon('ban', 'icon-xs') + TX('shop.out') + '</span>';
+        else if (pct) badges += '<span class="badge-pill badge-red">' + UI.icon('tag', 'icon-xs') + TX('shop.sale', { pct: pct }) + '</span>';
+        if (!out && p.is_featured) badges += '<span class="badge-pill badge-glass">' + UI.icon('sparkles', 'icon-xs') + TX('shop.featured') + '</span>';
         var action = out
             ? '<button type="button" class="btn btn-outline btn-sm" data-act="view">' + TX('shop.quick_view') + '</button>'
             : (p.is_customizable
