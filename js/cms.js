@@ -26,6 +26,7 @@
             free_shipping_threshold: 999, shipping_fee: 79, gst_percent: 18, gift_wrap_fee: 49,
             loyalty_rate: 1, loyalty_redeem_max_percent: 20, estimated_days_min: 5, estimated_days_max: 7,
             whatsapp: '916382052530', announcement: '', announcement_enabled: false,
+            show_reviews_home: true, show_reviews_product: true, ask_review_after_order: true,
             site_url: '', gstin: '', legal_name: '', business_address: ''
         },
         contact: { phone: '+91 63820 52530', email: 'bestowcbe@gmail.com', address: 'Coimbatore, Tamil Nadu, India', business_hours: 'Mon - Sat: 9:00 AM - 7:00 PM' },
