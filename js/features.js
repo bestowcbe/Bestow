@@ -49,7 +49,7 @@
         'pwa.installed': 'App installed. Find it on your home screen.',
         'offline.text': 'You are offline. Some features may not work until you reconnect.',
         'online.text': 'Back online',
-        'cookie.text': 'We use essential cookies and local storage to keep your cart, wishlist and sign-in working. No tracking or advertising cookies are used.',
+        'cookie.text': 'We use essential cookies and local storage to keep your cart, wishlist and sign-in working. We also use Google Analytics to understand how the site is used. No advertising cookies are used.',
         'cookie.accept': 'Got it',
         'faq.empty': 'No questions yet.',
         'policy.not_found': 'This page does not exist.',
