@@ -242,7 +242,7 @@
             '<div class="product-card-body">' +
             (catName ? '<span class="product-card-cat">' + Utils.esc(catName) + '</span>' : '') +
             '<h3 class="product-card-title"><a href="' + href + '" data-route="product" data-param="' + Utils.esc(p.id) + '">' + Utils.esc(p.name) + '</a></h3>' +
-            '<div class="product-card-rating">' + Utils.stars(p.avg_rating) + '<span class="rating-count">(' + (p.review_count || 0) + ')</span></div>' +
+            (p.review_count > 0 ? '<div class="product-card-rating">' + Utils.stars(p.avg_rating) + '<span class="rating-count">(' + p.review_count + ')</span></div>' : '') +
             (p.short_description ? '<p class="product-card-desc">' + Utils.esc(Utils.truncate(p.short_description, 120)) + '</p>' : '') +
             '<div class="product-card-foot"><div class="price-wrap"><span class="price">' + money(p.price) + '</span>' +
             (pct ? '<del class="price-compare">' + money(p.compare_price) + '</del>' : '') + '</div>' + action + '</div></div></article>';
