@@ -139,8 +139,43 @@
             refreshIcons();
         },
 
+        applyVisibility: function () {
+            var st = Bestow.settings || {};
+            document.body.classList.toggle('reviews-home-off', st.show_reviews_home === false);
+            document.body.classList.toggle('reviews-off', st.show_reviews_product === false);
+        },
+
+        /* After every delivered order, ask for a review once per order (until reviewed or dismissed). */
+        askAfterOrder: async function () {
+            try {
+                var st = Bestow.settings || {};
+                if (st.ask_review_after_order === false || !(window.AppState && AppState.user)) return;
+                var uid = AppState.user.id;
+                if (Reviews._asked === uid) return; Reviews._asked = uid;
+                var o = await API.orders.mine(uid), rv = await API.reviews.byCustomer(uid);
+                var done = {}; (rv.data || []).forEach(function (x) { done[x.order_id + ':' + x.product_id] = 1; });
+                var dismissed = {}; try { dismissed = JSON.parse(localStorage.getItem('bestow_review_ask') || '{}'); } catch (e) {}
+                var pick = null, todo = [];
+                (o.data || []).some(function (ord) {
+                    if (ord.order_status !== 'delivered' || dismissed[ord.id]) return false;
+                    var items = (ord.items || []).filter(function (i) { return i.product_id && !done[ord.id + ':' + i.product_id]; });
+                    if (!items.length) return false;
+                    pick = ord; todo = items; return true;
+                });
+                if (!pick) return;
+                $('reviewAskOrder').textContent = pick.order_number;
+                $('reviewAskList').innerHTML = todo.slice(0, 5).map(function (i) {
+                    return '<div class="review-ask-row"><img src="' + Utils.esc(i.image || Utils.PLACEHOLDER) + '" alt=""><span>' + Utils.esc(i.name) + '</span><button type="button" class="btn btn-primary btn-sm" data-ask-review data-o="' + Utils.esc(pick.id) + '" data-p="' + Utils.esc(i.product_id) + '" data-n="' + Utils.esc(i.name) + '">Review</button></div>';
+                }).join('');
+                $('reviewAskModal').setAttribute('data-order', pick.id);
+                setTimeout(function () { UI.openModal('reviewAskModal'); refreshIcons(); }, 1500);
+            } catch (e) { /* reviews table unavailable: skip silently */ }
+        },
+
         loadHome: async function () {
             var box = $('reviewsCarousel'), nav = $('reviewsNav'); if (!box) return;
+            Reviews.applyVisibility();
+            if ((Bestow.settings || {}).show_reviews_home === false) return;
             var r = await API.reviews.approvedFeed(10);
             var list = r.data || [];
             clearInterval(carousel.timer);
@@ -164,6 +199,12 @@
         },
 
         bind: function () {
+            var ask = $('reviewAskModal');
+            function later() { var id = ask.getAttribute('data-order'), d = {}; try { d = JSON.parse(localStorage.getItem('bestow_review_ask') || '{}'); } catch (e) {} d[id] = 1; try { localStorage.setItem('bestow_review_ask', JSON.stringify(d)); } catch (e) {} UI.closeModal('reviewAskModal'); }
+            if (ask) {
+                $('reviewAskLater').addEventListener('click', later);
+                ask.addEventListener('click', function (e) { var b = e.target.closest('[data-ask-review]'); if (!b) return; UI.closeModal('reviewAskModal'); Reviews.openModal(b.getAttribute('data-p'), b.getAttribute('data-o'), b.getAttribute('data-n')); });
+            }
             $('reviewForm').addEventListener('submit', Reviews.submit);
             $('starRatingInput').addEventListener('click', function (e) {
                 var b = e.target.closest('[data-rating]'); if (!b) return;
