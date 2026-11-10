@@ -198,7 +198,7 @@
         <div id="recentGrid" class="recent-grid"></div>
     </div></section>
 
-    <section class="section section-tint"><div class="container">
+    <section id="homeReviews" class="section section-tint"><div class="container">
         <div class="section-header"><span class="eyebrow"><span data-cms="home.rev_eyebrow">Reviews</span></span><h2><span data-cms="home.rev_title">What customers say</span></h2></div>
         <div class="carousel glass">
             <div id="reviewsCarousel" class="carousel-viewport"></div>
@@ -601,6 +601,14 @@
             <button type="button" id="backToLogin" class="link-btn center-block"><span data-cms="auth.back">Back to sign in</span></button>
         </form>
         <p id="authSwitchWrap" class="auth-switch"><span id="authSwitchText"></span> <button type="button" id="authSwitchBtn" class="link-btn"></button></p>
+    </div>
+</div>
+
+<div id="reviewAskModal" class="modal-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="reviewAskTitle">
+    <div class="modal modal-sm glass-strong"><button type="button" class="modal-close icon-btn" data-close-modal aria-label="Close"><i data-lucide="x"></i></button>
+        <div class="modal-head"><h2 id="reviewAskTitle">How was your order?</h2><p>Order <strong id="reviewAskOrder"></strong> was delivered. Your review helps other customers choose with confidence.</p></div>
+        <div id="reviewAskList" class="review-ask-list"></div>
+        <button type="button" class="btn btn-ghost btn-block" id="reviewAskLater">Maybe later</button>
     </div>
 </div>
 
