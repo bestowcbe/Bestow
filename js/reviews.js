@@ -143,6 +143,7 @@
             var st = Bestow.settings || {};
             document.body.classList.toggle('reviews-home-off', st.show_reviews_home === false);
             document.body.classList.toggle('reviews-off', st.show_reviews_product === false);
+            document.body.classList.toggle('stars-off', st.show_star_ratings === false);
         },
 
         /* After every delivered order, ask for a review once per order (until reviewed or dismissed). */
