@@ -149,7 +149,7 @@
             setTimeout(async function () {
                 if (event === 'SIGNED_OUT') { clearUser(); var n = Router.current().name; if (n === 'account' || n === 'admin') Router.go('home'); }
                 else if (event === 'PASSWORD_RECOVERY') { await handleUser(session && session.user); promptNewPassword(); }
-                else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session && session.user) { await handleUser(session.user); }
+                else if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') && session && session.user) { await handleUser(session.user); if (event === 'SIGNED_IN' && !AppState.isAdmin) Reviews.askAfterOrder(); }
             }, 0);
         });
     }
@@ -504,6 +504,7 @@
         Bestow.ready = (async function () {
             if (!API.sb) { var b = $('offlineBanner'); $('offlineText').textContent = 'Could not connect to the store backend. Please refresh.'; b.classList.add('visible'); return; }
             await Promise.all([Bestow.load(), initAuth()]);
+            try { Reviews.applyVisibility(); if (AppState.user && !AppState.isAdmin) Reviews.askAfterOrder(); } catch (e) {}
             if (API.cameFromEmail && AppState.user) { UI.toast('Email verified. Welcome to Bestow.', 'success', 6000); if (!/^#(account|home)/.test(location.hash)) location.replace('#home'); }
             await Shop.ensureCategories();
             renderFooterCategories();
