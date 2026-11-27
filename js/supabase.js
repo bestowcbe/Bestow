@@ -31,7 +31,7 @@
     window.sb = sb;
 
     var EDGE_FUNCTION = 'generate-invoice';
-    var FN_OPS = { 'create-payment-order': 'create-order', 'verify-payment': 'verify-payment', 'generate-invoice': 'invoice', 'send-email': 'email' };
+    var FN_OPS = { 'create-payment-order': 'create-order', 'verify-payment': 'verify-payment', 'generate-invoice': 'invoice', 'send-email': 'email', 'costing-pdf': 'costing-pdf' };
 
     var OFFLINE = { data: null, error: { message: 'Service unavailable. Please check your connection.' } };
 
@@ -84,6 +84,8 @@
                 if (res.error) {
                     var msg = res.error.message || 'Request failed';
                     try { if (res.error.context && res.error.context.json) { var j = await res.error.context.json(); msg = j.message || j.error || msg; } } catch (e) { /* ignore */ }
+                    /* an older deployed copy of the function does not know the costing PDF yet */
+                    if (name === 'costing-pdf' && /^unknown operation$/i.test(String(msg).trim())) msg = 'The server has not been updated for PDF yet. Run: supabase functions deploy generate-invoice --no-verify-jwt';
                     return { data: null, error: { message: msg } };
                 }
                 return { data: res.data, error: null };
@@ -267,6 +269,25 @@
                 return qy;
             }),
             update: q(async function (id, patch) { return sb.from('return_requests').update(patch).eq('id', id); })
+        },
+        /* ---------- COSTING CALCULATOR (admin only, enforced by RLS) ---------- */
+        costing: {
+            getConfig: q(async function () { return sb.from('costing_config').select('config, updated_at').eq('id', 1).maybeSingle(); }),
+            saveConfig: q(async function (userId, config) {
+                return sb.from('costing_config').upsert({ id: 1, config: config, updated_by: userId || null, updated_at: new Date().toISOString() }, { onConflict: 'id' }).select('config, updated_at').maybeSingle();
+            }),
+            quotes: q(async function () {
+                return sb.from('costing_quotes').select('id, quote_no, title, customer_name, status, lang, summary, created_at, updated_at').order('updated_at', { ascending: false }).limit(300);
+            }),
+            quote: q(async function (id) { return sb.from('costing_quotes').select('*').eq('id', id).maybeSingle(); }),
+            saveQuote: q(async function (row) {
+                var body = { title: row.title, customer_name: row.customer_name, status: row.status, lang: row.lang, inputs: row.inputs, summary: row.summary };
+                if (row.id) return sb.from('costing_quotes').update(body).eq('id', row.id).select('id, quote_no, updated_at').maybeSingle();
+                body.created_by = row.created_by || null;
+                return sb.from('costing_quotes').insert(body).select('id, quote_no, updated_at').maybeSingle();
+            }),
+            setStatus: q(async function (id, status) { return sb.from('costing_quotes').update({ status: status }).eq('id', id); }),
+            removeQuote: q(async function (id) { return sb.from('costing_quotes').delete().eq('id', id); })
         },
         inquiries: {
             create: q(async function (row) { return sb.from('contact_inquiries').insert(row); }),
