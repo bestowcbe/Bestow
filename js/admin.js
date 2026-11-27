@@ -1,6 +1,6 @@
 /* ==========================================================================
    BESTOW - ADMIN PANEL
-   Dashboard, orders, catalogue, customers, reviews, coupons, inquiries, newsletter,
+   Dashboard, orders, catalogue, customers, reviews, coupons, costing calculator, inquiries, newsletter,
    Site Text Manager, branding, settings, contact, SEO, FAQ, policies, email log, activity log.
    Everything goes through API.* (RLS enforces admin rights on the server) and the
    edge functions (invoices and e-mail). No secret ever lives in this file.
@@ -17,6 +17,7 @@
         { id: 'products', label: 'Products', icon: 'gift', group: 'Sales' },
         { id: 'categories', label: 'Categories', icon: 'layers', group: 'Sales' },
         { id: 'coupons', label: 'Coupons', icon: 'ticket', group: 'Sales' },
+        { id: 'costing', label: 'Costing Calculator', icon: 'calculator', group: 'Sales' },
         { id: 'returns', label: 'Returns and Exchanges', icon: 'rotate-ccw', group: 'Sales' },
         { id: 'customers', label: 'Customers', icon: 'users', group: 'Sales' },
         { id: 'reviews', label: 'Reviews', icon: 'star', group: 'Engage' },
@@ -845,6 +846,608 @@
     }
 
     /* ======================================================================
+       COSTING CALCULATOR
+       Quote builder, rate card and saved quotes. The calculation itself lives in
+       BestowCost (utils.js) and runs again inside the edge function for the PDF,
+       so the printed sheet always matches the screen.
+       ====================================================================== */
+    var BC = window.BestowCost;
+    var C_UNITS = [['mm', 'mm'], ['cm', 'cm'], ['m', 'm'], ['inch', 'inch'], ['ft', 'ft']];
+    var C_STATUS = ['draft', 'sent', 'accepted', 'rejected'];
+    var C_ROW_MSG = {
+        incomplete: 'Fill in every field of this row.', zero: 'Size and pieces must be more than zero.', qty: 'Pieces must be a whole number.',
+        size: 'That size is too large. Check the unit.', unavailable: 'That thickness is not on the rate card for this material.',
+        print: 'Choose a print type.', extra: 'Give the charge a name and a valid amount.'
+    };
+    var C_SEC = { acrylic: 'Acrylic part', wood: 'Wood part', uv: 'UV print', extras: 'Extra charge' };
+    var C_SCREEN = { acrylic_used: 1, wood_used: 1, acrylic_types: 1, cost_summary: 1, pricing: 1 };
+    var CS = { view: 'calc', cfg: null, cfgAt: null, quotes: [], q: null, lang: 'en', mode: 'internal', search: '', status: 'all', dirty: false, bound: false, draft: null, raf: 0, last: null };
+
+    function cMoney(n) { return '₹' + BC.fmt(n, 2); }
+    function cLc(v) { return String(v === undefined || v === null ? '' : v).trim().toLowerCase(); }
+    function cDate() { return new Date().toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }); }
+    function cEff() { return BC.normalize((CS.q && CS.q.rates) || CS.cfg); }
+    function cThicks(cfg, cat, name) {
+        var l = cfg.materials.filter(function (m) { return m.category === cat && cLc(m.material) === cLc(name); }).map(function (m) { return m.thickness; });
+        return l.sort(function (a, b) { return a - b; });
+    }
+    function cUvTargets(cfg) {
+        var all = BC.names(cfg, 'acrylic').concat(BC.names(cfg, 'wood')), seen = {}, out = [];
+        all.forEach(function (n) { if (!seen[n]) { seen[n] = 1; out.push(n); } });
+        return out;
+    }
+    function cBlankQuote() {
+        var cfg = BC.normalize(CS.cfg);
+        return { id: null, quote_no: '', title: '', customer_name: '', status: 'draft', notes: '', rates: null,
+            inputs: { qty: '1', margin: String(cfg.default_margin), design: '', labour: '', transport: '', gst: '', round_to: '', acrylic: [], wood: [], uv: [], extras: [] } };
+    }
+    function cNewRow(sec) {
+        var cfg = cEff(), list = CS.q.inputs[sec] || [], last = list.length ? list[list.length - 1] : null;
+        if (sec === 'extras') return { name: '', amount: '', per: 'product' };
+        var hu = last && last.hu ? last.hu : 'inch', wu = last && last.wu ? last.wu : 'inch';
+        if (sec === 'uv') { var t = cUvTargets(cfg); return { name: '', on: t[0] || '', print: 'without_white', h: '', hu: hu, w: '', wu: wu, qty: '1' }; }
+        var names = BC.names(cfg, sec), m = names[0] || '', th = cThicks(cfg, sec, m);
+        return { name: '', material: m, thickness: th.length ? String(th[0]) : '', h: '', hu: hu, w: '', wu: wu, qty: '1' };
+    }
+
+    /* ---------- form pieces ---------- */
+    function cOpt(v, l, cur) { return '<option value="' + esc(v) + '"' + (String(v) === String(cur) ? ' selected' : '') + '>' + esc(l) + '</option>'; }
+    function cUnitSel(f, v, lab) { return '<select data-f="' + f + '" aria-label="' + esc(lab) + '">' + C_UNITS.map(function (u) { return cOpt(u[0], u[1], v); }).join('') + '</select>'; }
+    function cField(cls, lab, inner) { return '<label class="cf ' + cls + '"><span>' + esc(lab) + '</span>' + inner + '</label>'; }
+    function cInput(f, v, o) { o = o || {}; return '<input type="text" data-f="' + f + '" value="' + esc(v === undefined || v === null ? '' : v) + '" inputmode="' + (o.mode || 'decimal') + '" autocomplete="off"' + (o.ph ? ' placeholder="' + esc(o.ph) + '"' : '') + (o.max ? ' maxlength="' + o.max + '"' : '') + (o.aria ? ' aria-label="' + esc(o.aria) + '"' : '') + '>'; }
+    function cThickOpts(cfg, sec, mat, cur) {
+        var th = cThicks(cfg, sec, mat), c = cur === undefined || cur === null || cur === '' ? null : Number(cur);
+        if (c !== null && isFinite(c) && th.indexOf(c) < 0) th.unshift(c);
+        if (!th.length) return '<option value="">-</option>';
+        return th.map(function (t) { return cOpt(t, t + ' mm', c); }).join('');
+    }
+    function cRowHead(sec, i, title) {
+        return '<div class="cost-row-head"><span class="cost-row-title">' + esc(title) + ' ' + (i + 1) + '</span><button type="button" class="icon-btn icon-btn-sm" data-cost="del-row" aria-label="Remove ' + esc(title.toLowerCase()) + ' ' + (i + 1) + '">' + UI.icon('trash-2') + '</button></div>';
+    }
+    function cPartRow(sec, i, r) {
+        var cfg = cEff(), names = BC.names(cfg, sec).slice();
+        if (r.material && names.map(cLc).indexOf(cLc(r.material)) < 0) names.unshift(r.material);
+        return '<div class="cost-row" data-sec="' + sec + '">' + cRowHead(sec, i, sec === 'acrylic' ? 'Acrylic part' : 'Wood part') + '<div class="cost-grid">' +
+            cField('cf-name', 'Part name', cInput('name', r.name, { mode: 'text', ph: 'e.g. Base plate', max: 60 })) +
+            cField('cf-mat', 'Material', '<select data-f="material">' + names.map(function (n) { return cOpt(n, n, r.material); }).join('') + '</select>') +
+            cField('cf-th', 'Thickness', '<select data-f="thickness">' + cThickOpts(cfg, sec, r.material, r.thickness) + '</select>') +
+            '<div class="cf cf-dim"><span>Height</span><div class="cf-pair">' + cInput('h', r.h, { aria: 'Height', ph: '0' }) + cUnitSel('hu', r.hu, 'Height unit') + '</div></div>' +
+            '<div class="cf cf-dim"><span>Width</span><div class="cf-pair">' + cInput('w', r.w, { aria: 'Width', ph: '0' }) + cUnitSel('wu', r.wu, 'Width unit') + '</div></div>' +
+            cField('cf-qty', 'Pieces per product', cInput('qty', r.qty, { mode: 'numeric' })) +
+            '</div><p class="cost-row-line" data-line></p></div>';
+    }
+    function cUvRow(i, r) {
+        var cfg = cEff(), targets = cUvTargets(cfg);
+        if (r.on && targets.map(cLc).indexOf(cLc(r.on)) < 0) targets.unshift(r.on);
+        var forced = cfg.uv.always_without_white.map(cLc).indexOf(cLc(r.on)) >= 0;
+        var pr = forced ? 'without_white' : r.print;
+        return '<div class="cost-row" data-sec="uv">' + cRowHead('uv', i, 'UV print') + '<div class="cost-grid">' +
+            cField('cf-name', 'Print name', cInput('name', r.name, { mode: 'text', ph: 'e.g. Photo', max: 60 })) +
+            cField('cf-mat', 'Printed on', '<select data-f="on">' + targets.map(function (n) { return cOpt(n, n, r.on); }).join('') + '</select>') +
+            cField('cf-th', 'Print type', '<select data-f="print"' + (forced ? ' disabled' : '') + '>' + cOpt('with_white', 'With white', pr) + cOpt('without_white', 'Without white', pr) + '</select>') +
+            '<div class="cf cf-dim"><span>Height</span><div class="cf-pair">' + cInput('h', r.h, { aria: 'Height', ph: '0' }) + cUnitSel('hu', r.hu, 'Height unit') + '</div></div>' +
+            '<div class="cf cf-dim"><span>Width</span><div class="cf-pair">' + cInput('w', r.w, { aria: 'Width', ph: '0' }) + cUnitSel('wu', r.wu, 'Width unit') + '</div></div>' +
+            cField('cf-qty', 'Prints per product', cInput('qty', r.qty, { mode: 'numeric' })) +
+            '</div><p class="cost-row-line" data-line></p></div>';
+    }
+    function cExtraRow(i, r) {
+        return '<div class="cost-row" data-sec="extras">' + cRowHead('extras', i, 'Extra charge') + '<div class="cost-grid cost-grid-extra">' +
+            cField('cf-name', 'Charge name', cInput('name', r.name, { mode: 'text', ph: 'e.g. Gift box', max: 60 })) +
+            cField('cf-amt', 'Amount (₹)', cInput('amount', r.amount, { ph: '0' })) +
+            cField('cf-per', 'Charged', '<select data-f="per">' + cOpt('product', 'Per product', r.per) + cOpt('order', 'Once per order', r.per) + '</select>') +
+            '</div></div>';
+    }
+    function cSection(title, hint, addSec, addLabel, rowsHtml) {
+        return '<section class="cost-block glass"><div class="cost-block-head"><div><h3>' + esc(title) + '</h3>' + (hint ? '<p>' + esc(hint) + '</p>' : '') + '</div>' +
+            (addSec ? '<button type="button" class="btn btn-outline btn-sm" data-cost="add-row" data-sec="' + addSec + '">' + UI.icon('plus', 'icon-xs') + ' ' + esc(addLabel) + '</button>' : '') + '</div>' +
+            '<div class="cost-rows" data-rows="' + (addSec || '') + '">' + rowsHtml + '</div></section>';
+    }
+    function cTop(lab, name, val, o) {
+        o = o || {};
+        return '<label class="cf ' + (o.cls || '') + '"><span>' + esc(lab) + '</span><input type="text" data-top="' + name + '" value="' + esc(val) + '" inputmode="' + (o.mode || 'decimal') + '" autocomplete="off"' + (o.ph ? ' placeholder="' + esc(o.ph) + '"' : '') + '>' + (o.hint ? '<small>' + esc(o.hint) + '</small>' : '') + '</label>';
+    }
+    function cFormHtml() {
+        var q = CS.q, i = q.inputs, cfg = cEff();
+        var banner = '';
+        if (q.rates && JSON.stringify(BC.normalize(q.rates)) !== JSON.stringify(BC.normalize(CS.cfg))) {
+            banner = '<div class="cost-note"><span>' + UI.icon('info', 'icon-sm') + ' This quote uses the rates it was saved with, so its price does not change when the rate card changes.</span><button type="button" class="btn btn-outline btn-sm" data-cost="use-rates">Use today\'s rates</button></div>';
+        }
+        var chips = cfg.margins.map(function (m) { return '<button type="button" class="chip" data-cost="margin" data-v="' + m + '">' + m + '%</button>'; }).join('');
+        return banner +
+            '<section class="cost-block glass"><div class="cost-block-head"><div><h3>Product and order</h3><p>Name, quantity and the profit margin you want on top of the manufacturing cost.</p></div></div>' +
+            '<div class="cost-grid cost-grid-top">' +
+            '<label class="cf cf-wide"><span>Product name <em>*</em></span><input type="text" data-meta="title" value="' + esc(q.title) + '" maxlength="120" placeholder="e.g. Acrylic photo stand" autocomplete="off"></label>' +
+            '<label class="cf cf-wide"><span>Customer</span><input type="text" data-meta="customer_name" value="' + esc(q.customer_name) + '" maxlength="120" placeholder="Optional" autocomplete="off"></label>' +
+            cTop('Order quantity (pieces)', 'qty', i.qty, { mode: 'numeric' }) +
+            cTop('Profit margin (%)', 'margin', i.margin, { hint: 'Added on top of the manufacturing cost' }) +
+            '</div><div class="chip-row" role="group" aria-label="Margin presets"><span class="chip-label">Margin</span>' + chips + '</div></section>' +
+            cSection('Acrylic parts', 'Add every acrylic piece in one product: any type, any thickness.', 'acrylic', 'Add part', (i.acrylic.length ? i.acrylic.map(function (r, n) { return cPartRow('acrylic', n, r); }).join('') : '<p class="cost-empty">No acrylic parts yet.</p>')) +
+            cSection('Rubber wood parts', 'Wood is priced by thickness and cut per piece.', 'wood', 'Add part', (i.wood.length ? i.wood.map(function (r, n) { return cPartRow('wood', n, r); }).join('') : '<p class="cost-empty">No wood parts yet.</p>')) +
+            cSection('UV printing', 'Printed area is charged per square foot. White acrylic is always charged without white.', 'uv', 'Add print', (i.uv.length ? i.uv.map(function (r, n) { return cUvRow(n, r); }).join('') : '<p class="cost-empty">No UV printing.</p>')) +
+            '<section class="cost-block glass"><div class="cost-block-head"><div><h3>Charges and pricing</h3><p>Entered per product. They are multiplied by the order quantity for the whole order.</p></div></div>' +
+            '<div class="cost-grid cost-grid-charges">' + cTop('Designing (₹)', 'design', i.design, { ph: '0' }) + cTop('Labour and assembling (₹)', 'labour', i.labour, { ph: '0' }) + cTop('Transportation (₹)', 'transport', i.transport, { ph: '0' }) +
+            cTop('GST on selling price (%)', 'gst', i.gst, { ph: 'None' }) + cTop('Round selling price up to (₹)', 'round_to', i.round_to, { ph: 'No rounding', hint: 'e.g. 5 or 10' }) + '</div>' +
+            '<div class="cost-sub"><div class="cost-sub-head"><h4>Extra charges</h4><button type="button" class="btn btn-outline btn-sm" data-cost="add-row" data-sec="extras">' + UI.icon('plus', 'icon-xs') + ' Add charge</button></div>' +
+            '<div class="cost-rows" data-rows="extras">' + (i.extras.length ? i.extras.map(function (r, n) { return cExtraRow(n, r); }).join('') : '<p class="cost-empty">Packing, box, courier or anything else.</p>') + '</div></div></section>' +
+            '<section class="cost-block glass"><div class="cost-block-head"><div><h3>Status and notes</h3><p>Notes are printed on the sheet.</p></div></div><div class="cost-grid cost-grid-meta">' +
+            '<label class="cf"><span>Status</span><select data-meta="status">' + C_STATUS.map(function (s) { return cOpt(s, label(s), q.status); }).join('') + '</select></label>' +
+            '<label class="cf cf-wide"><span>Notes</span><textarea data-meta="notes" rows="3" maxlength="600" placeholder="Delivery time, validity, payment terms">' + esc(q.notes) + '</textarea></label></div></section>';
+    }
+
+    /* ---------- reading the form ---------- */
+    function cCollect() {
+        var f = $('costForm'); if (!f || !CS.q) return;
+        var inp = CS.q.inputs;
+        Array.prototype.forEach.call(f.querySelectorAll('[data-top]'), function (e) { inp[e.getAttribute('data-top')] = e.value; });
+        Array.prototype.forEach.call(f.querySelectorAll('[data-meta]'), function (e) { CS.q[e.getAttribute('data-meta')] = e.value; });
+        ['acrylic', 'wood', 'uv', 'extras'].forEach(function (sec) {
+            var rows = [];
+            Array.prototype.forEach.call(f.querySelectorAll('.cost-row[data-sec="' + sec + '"]'), function (rw) {
+                var o = {};
+                Array.prototype.forEach.call(rw.querySelectorAll('[data-f]'), function (e) { o[e.getAttribute('data-f')] = e.value; });
+                rows.push(o);
+            });
+            inp[sec] = rows;
+        });
+    }
+    function cInputs() { return Object.assign({}, CS.q.inputs, { rates: cEff() }); }
+
+    /* ---------- on-screen results ---------- */
+    function cMeta(lang) {
+        var q = CS.q, c = window.Bestow && Bestow.contact || {}, b = window.Bestow && Bestow.branding || {};
+        return { title: q.title, customer: q.customer_name, quote_no: q.quote_no, date: cDate(), notes: q.notes,
+            brand: b.brand_name || 'Bestow', tagline: b.tagline || '', contact: [c.phone, c.email].filter(Boolean).join('  |  '), lang: lang };
+    }
+    function cErrText(e) {
+        if (e.section === 'order') {
+            var names = { design: 'designing', labour: 'labour', transport: 'transportation' };
+            switch (e.code) {
+            case 'qty': return 'Order quantity must be a whole number, 1 or more.';
+            case 'margin': return 'Profit margin must be a number from 0 to 1000.';
+            case 'charge': return 'Check the ' + (names[e.field] || 'charge') + ' amount.';
+            case 'gst': return 'GST must be a number from 0 to 100.';
+            case 'round_to': return 'The rounding step must be 0 or more.';
+            case 'no_parts': return 'Add at least one acrylic or wood part.';
+            default: return 'Check the order details.';
+            }
+        }
+        return (C_SEC[e.section] || 'Row') + ' ' + (e.row + 1) + ': ' + (C_ROW_MSG[e.code] || 'check this row.');
+    }
+    function cAlign(a) { return a === 'r' ? ' class="num"' : ''; }
+    function cTableHtml(s) {
+        return '<div class="table-wrap"><table class="admin-table cost-table' + (s.key === 'cost_summary' ? ' cost-compact' : '') + '"><thead><tr>' + s.head.map(function (h, i) { return '<th' + cAlign(s.align[i]) + '>' + esc(h) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+            s.rows.map(function (r) { return '<tr>' + r.map(function (c, i) { return '<td data-label="' + esc(s.head[i]) + '"' + cAlign(s.align[i]) + '>' + esc(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody>' +
+            (s.foot ? '<tfoot><tr>' + s.foot.map(function (c, i) { return '<td data-label="' + esc(s.head[i]) + '"' + cAlign(s.align[i]) + '>' + esc(c) + '</td>'; }).join('') + '</tr></tfoot>' : '') + '</table></div>';
+    }
+    function cKvHtml(s, L) {
+        return '<dl class="cost-kv">' + s.kv.map(function (k) {
+            var strong = k[0] === L.sell_pp || k[0] === L.order_sales || k[0] === L.order_total_incl;
+            return '<div' + (strong ? ' class="strong"' : '') + '><dt>' + esc(k[0]) + '</dt><dd>' + esc(k[1]) + '</dd></div>';
+        }).join('') + '</dl>';
+    }
+    function cResultsHtml(r, sc) {
+        var onlyEmpty = r.errors.length === 1 && r.errors[0].code === 'no_parts';
+        if (onlyEmpty) return { side: '<div class="cost-start glass">' + UI.icon('calculator', 'icon-lg') + '<h3>Start with a part</h3><p>Add an acrylic or wood part and the full costing appears here as you type.</p></div>', wide: '' };
+        var m = BC.doc(r, cMeta('en'), 'en', 'internal', sc), L = m.L, h = '', w = '';
+        if (!r.ok) {
+            h += '<div class="cost-alert" role="alert"><strong>' + UI.icon('alert-triangle', 'icon-sm') + ' Fix these to print or download</strong><ul>' + r.errors.map(function (e) { return '<li>' + esc(cErrText(e)) + '</li>'; }).join('') + '</ul><small>Rows with a problem are left out of the totals below.</small></div>';
+        }
+        h += '<div class="cost-kpis">' + m.kpis.map(function (k, i) { return '<div class="cost-kpi' + (i === 1 ? ' main' : '') + '"><span>' + esc(k[0]) + '</span><strong>' + esc(k[1]) + '</strong></div>'; }).join('') + '</div>';
+        m.sections.forEach(function (s) {
+            if (!C_SCREEN[s.key]) return;
+            var card = '<section class="cost-result glass"><h3>' + esc(s.title) + '</h3>' + (s.kv ? cKvHtml(s, L) : cTableHtml(s)) + '</section>';
+            if (s.key === 'cost_summary' || s.key === 'pricing') h += card; else w += card;
+        });
+        var scn = m.sections.filter(function (s) { return s.key === 'sc_margin' || s.key === 'sc_qty'; });
+        if (scn.length) w += '<details class="cost-result glass cost-scen"><summary>' + UI.icon('git-compare', 'icon-sm') + ' Compare other margins and quantities</summary><div class="cost-scen-grid">' + scn.map(function (s) { return '<div><h4>' + esc(s.title) + '</h4>' + cTableHtml(s) + '</div>'; }).join('') + '</div></details>';
+        return { side: h, wide: w };
+    }
+    function cRowLines(r) {
+        var f = $('costForm'); if (!f) return;
+        [['acrylic', r.acrylic], ['wood', r.wood], ['uv', r.uv]].forEach(function (p) {
+            var by = {}; p[1].forEach(function (l) { by[l.row] = l; });
+            Array.prototype.forEach.call(f.querySelectorAll('.cost-row[data-sec="' + p[0] + '"]'), function (el, i) {
+                var line = el.querySelector('[data-line]'), l = by[i];
+                el.classList.remove('is-bad', 'is-ok');
+                if (!l) { line.textContent = 'This row is empty, so it is ignored.'; return; }
+                if (l.status !== 'OK') { line.textContent = C_ROW_MSG[l.status] || 'Check this row.'; el.classList.add('is-bad'); return; }
+                el.classList.add('is-ok');
+                if (p[0] === 'uv') line.textContent = 'Printed area ' + BC.fmtArea(l.area_product) + ' sq ft at ' + cMoney(l.rate) + ' = ' + cMoney(l.cost) + ' per product' + (l.forced ? '. White acrylic is always charged without white.' : '.');
+                else line.textContent = 'Area per product ' + BC.fmtArea(l.area_product) + ' sq ft. Material ' + cMoney(l.mat_cost) + ' + cutting ' + cMoney(l.cut_cost) + ' per product, before rounding up the whole order.';
+            });
+        });
+    }
+    function cRefresh() {
+        if (CS.view !== 'calc' || !$('costForm')) return;
+        cCollect();
+        var cfg = cEff(), r = BC.calc(CS.q.inputs, cfg), sc = r.ok ? BC.scenarios(CS.q.inputs, cfg) : null;
+        CS.last = r;
+        cRowLines(r);
+        var res = cResultsHtml(r, sc), box = $('costResults'), wide = $('costWide');
+        if (box) box.innerHTML = res.side; if (wide) wide.innerHTML = res.wide;
+        refreshIcons();
+        Array.prototype.forEach.call(document.querySelectorAll('[data-cost-needs-ok]'), function (b) { b.disabled = !r.ok; });
+        var m = CS.q.inputs.margin;
+        Array.prototype.forEach.call(document.querySelectorAll('[data-cost="margin"]'), function (b) { b.classList.toggle('active', String(BC.num(m).v) === b.getAttribute('data-v') && BC.num(m).ok); });
+    }
+    function cRefreshSoon() {
+        CS.dirty = true;
+        if (CS.raf) return;
+        CS.raf = window.requestAnimationFrame(function () { CS.raf = 0; cRefresh(); });
+    }
+
+    /* ---------- print view (same document model as the PDF) ---------- */
+    function cPrintHtml(m, auto) {
+        var L = m.L, lang = m.lang, e = esc;
+        var fonts = { ta: ['Noto+Serif+Tamil:wght@400;600;700', "'Noto Serif Tamil'"], hi: ['Noto+Sans+Devanagari:wght@400;600;700', "'Noto Sans Devanagari'"], te: ['Noto+Sans+Telugu:wght@400;600;700', "'Noto Sans Telugu'"],
+            ml: ['Noto+Sans+Malayalam:wght@400;600;700', "'Noto Sans Malayalam'"], kn: ['Noto+Sans+Kannada:wght@400;600;700', "'Noto Sans Kannada'"] };
+        var fd = fonts[lang], fam = (fd ? fd[1] + ', ' : '') + "'Helvetica Neue', Helvetica, Arial, sans-serif";
+        var css = '@page{size:A4;margin:0}*{box-sizing:border-box;margin:0;padding:0;border:0}html,body{background:#fff}body{font-family:' + fam + ';color:#1b1b1f;font-size:10.5pt;line-height:1.45;-webkit-print-color-adjust:exact;print-color-adjust:exact}' +
+            '.page{width:210mm;min-height:297mm;margin:0 auto;padding:14mm 14mm 16mm}.bar{position:sticky;top:0;display:flex;gap:10px;align-items:center;justify-content:center;padding:10px;background:#f3f3f5}.bar button{font:600 13px Helvetica,Arial,sans-serif;padding:9px 18px;border-radius:999px;background:#de2128;color:#fff;cursor:pointer}' +
+            '.top{display:flex;justify-content:space-between;align-items:flex-start;gap:16px;margin-bottom:8mm}.brand{font-size:22pt;font-weight:700;color:#de2128;letter-spacing:.01em}.tag{font-size:9pt;color:#6b6b73}.doc{text-align:right}.doc h1{font-size:15pt;font-weight:700}.doc p{font-size:9pt;color:#6b6b73}' +
+            '.info{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-bottom:6mm}.info div{background:#f5f5f7;border-radius:6px;padding:6px 10px}.info span{display:block;font-size:7.5pt;color:#6b6b73;text-transform:uppercase;letter-spacing:.05em}.info strong{font-size:10pt;overflow-wrap:anywhere}' +
+            '.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-bottom:6mm}.kpi{background:#f5f5f7;border-radius:8px;padding:9px 11px}.kpi.main{background:#de2128;color:#fff}.kpi span{display:block;font-size:7.5pt;opacity:.8}.kpi strong{display:block;font-size:12.5pt;margin-top:2px}' +
+            'h2{font-size:11pt;margin:6mm 0 2mm;color:#de2128;break-after:avoid}table{width:100%;border-collapse:collapse;table-layout:fixed;font-size:8.8pt}thead{display:table-header-group}th{background:#ececf0;font-weight:700;text-align:left;padding:5px 6px;font-size:8pt}td{padding:5px 6px;overflow-wrap:anywhere;word-break:break-word;vertical-align:top}' +
+            'tbody tr:nth-child(even) td{background:#f8f8fa}tr{break-inside:avoid}tfoot td{background:#ececf0;font-weight:700}.r{text-align:right}th.r{text-align:right}.kv{width:100%}.kv div{display:flex;justify-content:space-between;gap:12px;padding:5px 8px}.kv div:nth-child(even){background:#f8f8fa}.kv .s{background:#fde8e9;font-weight:700}' +
+            '.notes{margin-top:6mm;background:#f5f5f7;border-radius:8px;padding:10px 12px;font-size:9.5pt;white-space:pre-wrap;overflow-wrap:anywhere}.foot{margin-top:8mm;font-size:8pt;color:#6b6b73;display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}.noprint{}' +
+            '@media print{.bar{display:none}.page{width:auto;min-height:0;margin:0}}@media screen{body{background:#e9e9ed}.page{background:#fff;box-shadow:0 4px 30px rgba(0,0,0,.12);margin:16px auto}}';
+        var h = '<!doctype html><html lang="' + lang + '"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + e((m.quote_no ? m.quote_no + ' - ' : '') + (m.product || m.title)) + '</title>' +
+            (fd ? '<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=' + fd[0] + '&display=swap">' : '') +
+            '<style>' + css + '</style></head><body><div class="bar noprint"><button type="button" onclick="window.print()">' + e(L.doc_internal === m.title ? 'Print / Save as PDF' : 'Print / Save as PDF') + '</button></div><main class="page">';
+        h += '<header class="top"><div><div class="brand">' + e(m.brand) + '</div>' + (m.tagline ? '<div class="tag">' + e(m.tagline) + '</div>' : '') + '</div><div class="doc"><h1>' + e(m.title) + '</h1>' + (m.quote_no ? '<p>' + e(L.quote_no) + ' ' + e(m.quote_no) + '</p>' : '') + (m.date ? '<p>' + e(m.date) + '</p>' : '') + '</div></header>';
+        h += '<div class="info">' + m.info.map(function (k) { return '<div><span>' + e(k[0]) + '</span><strong>' + e(k[1]) + '</strong></div>'; }).join('') + '</div>';
+        if (m.kpis.length) h += '<div class="kpis">' + m.kpis.map(function (k, i) { return '<div class="kpi' + (i === 1 ? ' main' : '') + '"><span>' + e(k[0]) + '</span><strong>' + e(k[1]) + '</strong></div>'; }).join('') + '</div>';
+        m.sections.forEach(function (s) {
+            h += '<h2>' + e(s.title) + '</h2>';
+            if (s.kv) { h += '<div class="kv">' + s.kv.map(function (k) { var st = k[0] === L.sell_pp || k[0] === L.order_sales || k[0] === L.order_total_incl; return '<div' + (st ? ' class="s"' : '') + '><span>' + e(k[0]) + '</span><span>' + e(k[1]) + '</span></div>'; }).join('') + '</div>'; return; }
+            var tot = s.widths.reduce(function (a, b) { return a + b; }, 0);
+            h += '<table><colgroup>' + s.widths.map(function (w) { return '<col style="width:' + (Math.round(w / tot * 10000) / 100) + '%">'; }).join('') + '</colgroup><thead><tr>' + s.head.map(function (x, i) { return '<th' + (s.align[i] === 'r' ? ' class="r"' : '') + '>' + e(x) + '</th>'; }).join('') + '</tr></thead><tbody>' +
+                s.rows.map(function (r) { return '<tr>' + r.map(function (c, i) { return '<td' + (s.align[i] === 'r' ? ' class="r"' : '') + '>' + e(c) + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody>' +
+                (s.foot ? '<tfoot><tr>' + s.foot.map(function (c, i) { return '<td' + (s.align[i] === 'r' ? ' class="r"' : '') + '>' + e(c) + '</td>'; }).join('') + '</tr></tfoot>' : '') + '</table>';
+        });
+        if (m.notes) h += '<h2>' + e(L.notes) + '</h2><div class="notes">' + e(m.notes) + '</div>';
+        h += '<footer class="foot"><span>' + e(m.brand) + (m.contact ? ' &middot; ' + e(m.contact) : '') + '</span><span>' + e(L.generated) + ' ' + e(m.date) + '</span></footer></main>';
+        if (auto) h += '<script>window.addEventListener("load",function(){var go=function(){setTimeout(function(){window.focus();window.print();},300)};if(document.fonts&&document.fonts.ready){document.fonts.ready.then(go)}else{go()}});<\/script>';
+        return h + '</body></html>';
+    }
+    function cOpenPrint(model) {
+        var w = null;
+        try { w = window.open('', '_blank'); } catch (x) { w = null; }
+        if (w) { w.document.open(); w.document.write(cPrintHtml(model, true)); w.document.close(); return; }
+        var fr = document.createElement('iframe');
+        fr.setAttribute('aria-hidden', 'true'); fr.style.cssText = 'position:fixed;right:0;bottom:0;width:0;height:0;border:0;visibility:hidden';
+        document.body.appendChild(fr);
+        fr.contentDocument.open(); fr.contentDocument.write(cPrintHtml(model, false)); fr.contentDocument.close();
+        setTimeout(function () { try { fr.contentWindow.focus(); fr.contentWindow.print(); } catch (x) { UI.toast('Could not open the print dialog. Allow pop-ups for this site and try again.', 'warning', 5000); } setTimeout(function () { fr.remove(); }, 60000); }, 900);
+    }
+    function cDownload(b64, name) {
+        var bin = atob(b64), n = bin.length, bytes = new Uint8Array(n), i;
+        for (i = 0; i < n; i++) bytes[i] = bin.charCodeAt(i);
+        var url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' })), a = document.createElement('a');
+        if ('download' in a) { a.href = url; a.download = name; a.style.display = 'none'; document.body.appendChild(a); a.click(); a.remove(); }
+        else window.open(url, '_blank');
+        setTimeout(function () { URL.revokeObjectURL(url); }, 20000);
+    }
+    function cFileName(q, mode, lang) {
+        var base = (q.quote_no || q.title || 'costing').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 40) || 'costing';
+        return 'bestow-' + base + '-' + (mode === 'customer' ? 'quotation' : 'costing') + '-' + lang + '.pdf';
+    }
+
+    /* ---------- views ---------- */
+    function cCalcHtml() {
+        var langs = Object.keys(BC.langs).map(function (k) { return cOpt(k, BC.langs[k], CS.lang); }).join('');
+        return '<div class="cost-bar glass"><div class="cost-bar-group">' +
+            '<button type="button" class="btn btn-outline btn-sm" data-cost="new">' + UI.icon('file-plus', 'icon-xs') + ' New</button>' +
+            '<button type="button" class="btn btn-primary btn-sm" data-cost="save">' + UI.icon('save', 'icon-xs') + ' Save</button>' +
+            '<button type="button" class="btn btn-outline btn-sm" data-cost="save-copy">' + UI.icon('copy', 'icon-xs') + ' Save as new</button></div>' +
+            '<div class="cost-bar-group"><label class="cf-inline"><span>Language</span><select id="costLang">' + langs + '</select></label>' +
+            '<label class="cf-inline"><span>Document</span><select id="costMode">' + cOpt('internal', 'Costing sheet', CS.mode) + cOpt('customer', 'Customer quotation', CS.mode) + '</select></label></div>' +
+            '<div class="cost-bar-group"><button type="button" class="btn btn-outline btn-sm" data-cost="print" data-cost-needs-ok>' + UI.icon('printer', 'icon-xs') + ' Print</button>' +
+            '<button type="button" class="btn btn-primary btn-sm" data-cost="pdf" data-cost-needs-ok>' + UI.icon('file-down', 'icon-xs') + ' Download PDF</button></div></div>' +
+            '<div class="cost-layout"><div class="cost-form" id="costForm">' + cFormHtml() + '</div><aside class="cost-results" id="costResults" aria-live="polite"></aside></div><div class="cost-wide" id="costWide"></div>';
+    }
+    function iconBtn2(act, icon, title, id, mode, cls) {
+        return '<button type="button" class="icon-btn icon-btn-sm ' + (cls || '') + '" data-cost="' + act + '" data-id="' + esc(id) + '"' + (mode ? ' data-mode="' + mode + '"' : '') + ' aria-label="' + esc(title) + '" title="' + esc(title) + '">' + UI.icon(icon) + '</button>';
+    }
+    function cQuoteRows() {
+        var term = cLc(CS.search);
+        var rows = CS.quotes.filter(function (q) {
+            if (CS.status !== 'all' && q.status !== CS.status) return false;
+            return !term || cLc(q.quote_no + ' ' + q.title + ' ' + q.customer_name).indexOf(term) >= 0;
+        });
+        if (!rows.length) return UI.empty('calculator', CS.quotes.length ? 'No matching quotes' : 'No saved quotes yet', CS.quotes.length ? 'Try another search or status.' : 'Save a calculation and it appears here.');
+        return '<div class="table-wrap glass"><table class="admin-table"><thead><tr><th>Quote</th><th>Product</th><th class="num">Qty</th><th class="num">Price / product</th><th class="num">Order value</th><th class="num">Profit</th><th>Status</th><th>Updated</th><th></th></tr></thead><tbody>' +
+            rows.map(function (q) {
+                var s = q.summary || {};
+                return '<tr><td data-label="Quote"><strong>' + esc(q.quote_no) + '</strong></td><td data-label="Product">' + esc(q.title) + '<small class="cell-sub">' + esc(q.customer_name || '') + '</small></td>' +
+                    '<td data-label="Qty" class="num">' + (s.qty ? BC.fmt(s.qty, 0) : '-') + '</td><td data-label="Price / product" class="num">' + (s.sell_pp !== undefined ? cMoney(s.sell_pp) : '-') + '</td>' +
+                    '<td data-label="Order value" class="num">' + (s.order_sales !== undefined ? cMoney(s.order_sales) : '-') + '</td><td data-label="Profit" class="num">' + (s.order_profit !== undefined ? cMoney(s.order_profit) : '-') + '</td>' +
+                    '<td data-label="Status"><select class="cost-status-sel" data-cost-status="' + esc(q.id) + '" aria-label="Status of ' + esc(q.quote_no) + '">' + C_STATUS.map(function (x) { return cOpt(x, label(x), q.status); }).join('') + '</select></td>' +
+                    '<td data-label="Updated">' + Utils.dateTime(q.updated_at) + '</td><td class="cell-actions">' +
+                    iconBtn2('open-quote', 'pencil', 'Open', q.id) + iconBtn2('dup-quote', 'copy', 'Duplicate', q.id) + iconBtn2('pdf-quote', 'file-text', 'Costing sheet PDF', q.id, 'internal') + iconBtn2('pdf-quote', 'file-check', 'Customer quotation PDF', q.id, 'customer') + iconBtn2('del-quote', 'trash-2', 'Delete', q.id, '', 'danger') + '</td></tr>';
+            }).join('') + '</tbody></table></div>';
+    }
+    function cQuotesHtml() {
+        return '<div class="admin-toolbar"><div class="admin-toolbar-left"><div class="search-field">' + UI.icon('search', 'icon-sm') + '<input type="search" id="costSearch" value="' + esc(CS.search) + '" placeholder="Search quote, product or customer" aria-label="Search quotes"></div>' +
+            '<select id="costStatusFilter" aria-label="Filter by status">' + cOpt('all', 'All statuses', CS.status) + C_STATUS.map(function (s) { return cOpt(s, label(s), CS.status); }).join('') + '</select></div>' +
+            '<div class="admin-toolbar-right"><button type="button" class="btn btn-outline btn-sm" data-cost="export-quotes">' + UI.icon('download', 'icon-xs') + ' Export CSV</button><button type="button" class="btn btn-primary btn-sm" data-cost="new">' + UI.icon('plus', 'icon-xs') + ' New quote</button></div></div>' +
+            '<div id="costQuoteList">' + cQuoteRows() + '</div>';
+    }
+    function cDraftFromCfg(cfg) {
+        return { materials: cfg.materials.map(function (m) { return { category: m.category, material: m.material, thickness: String(m.thickness), rate: String(m.rate), cut: String(m.cut) }; }),
+            with_white: String(cfg.uv.with_white), without_white: String(cfg.uv.without_white), always: cfg.uv.always_without_white.join(', '),
+            margins: cfg.margins.join(', '), default_margin: String(cfg.default_margin), qty_breaks: cfg.qty_breaks.join(', ') };
+    }
+    function cRateRow(m) {
+        return '<tr data-rate-row><td data-label="Type"><select data-r="category" aria-label="Type">' + cOpt('acrylic', 'Acrylic', m.category) + cOpt('wood', 'Wood', m.category) + '</select></td>' +
+            '<td data-label="Material"><input type="text" data-r="material" list="costMatList" value="' + esc(m.material) + '" maxlength="60" aria-label="Material name"></td>' +
+            '<td data-label="Thickness (mm)"><input type="text" data-r="thickness" inputmode="decimal" value="' + esc(m.thickness) + '" aria-label="Thickness in mm"></td>' +
+            '<td data-label="Rate (₹ / sq ft)"><input type="text" data-r="rate" inputmode="decimal" value="' + esc(m.rate) + '" aria-label="Rate per square foot"></td>' +
+            '<td data-label="Cutting (₹ / piece)"><input type="text" data-r="cut" inputmode="decimal" value="' + esc(m.cut) + '" aria-label="Cutting charge per piece"></td>' +
+            '<td class="cell-actions"><button type="button" class="icon-btn icon-btn-sm" data-cost="rate-del" aria-label="Remove this row">' + UI.icon('trash-2') + '</button></td></tr>';
+    }
+    function cRatesHtml() {
+        if (!CS.draft) CS.draft = cDraftFromCfg(BC.normalize(CS.cfg));
+        var d = CS.draft, names = {};
+        d.materials.forEach(function (m) { if (m.material) names[m.material] = 1; });
+        return '<form id="costRatesForm" class="admin-form" novalidate>' +
+            '<section class="admin-card glass"><div class="cost-block-head"><div><h3>Materials, rates and cutting</h3><p class="text-muted">Rates are per square foot for each thickness. Cutting is per piece. Saved quotes keep the rates they were made with.</p></div>' +
+            '<button type="button" class="btn btn-outline btn-sm" data-cost="rate-add">' + UI.icon('plus', 'icon-xs') + ' Add material</button></div>' +
+            '<datalist id="costMatList">' + Object.keys(names).map(function (n) { return '<option value="' + esc(n) + '"></option>'; }).join('') + '</datalist>' +
+            '<div class="table-wrap"><table class="admin-table cost-rate-table"><thead><tr><th>Type</th><th>Material</th><th>Thickness (mm)</th><th>Rate (₹ / sq ft)</th><th>Cutting (₹ / piece)</th><th></th></tr></thead><tbody id="costRateRows">' + d.materials.map(cRateRow).join('') + '</tbody></table></div></section>' +
+            '<div class="admin-grid-2"><section class="admin-card glass"><h3>UV printing</h3><div class="cost-grid cost-grid-rates">' +
+            '<label class="cf"><span>With white (₹ / sq ft)</span><input type="text" name="with_white" inputmode="decimal" value="' + esc(d.with_white) + '"></label>' +
+            '<label class="cf"><span>Without white (₹ / sq ft)</span><input type="text" name="without_white" inputmode="decimal" value="' + esc(d.without_white) + '"></label>' +
+            '<label class="cf cf-wide"><span>Always printed without white</span><input type="text" name="always" value="' + esc(d.always) + '" placeholder="White Acrylic"><small>Material names, separated by commas.</small></label></div></section>' +
+            '<section class="admin-card glass"><h3>Margins and quantity breaks</h3><div class="cost-grid cost-grid-rates">' +
+            '<label class="cf cf-wide"><span>Margin presets (%)</span><input type="text" name="margins" value="' + esc(d.margins) + '" placeholder="20, 25, 40"></label>' +
+            '<label class="cf"><span>Default margin (%)</span><input type="text" name="default_margin" inputmode="decimal" value="' + esc(d.default_margin) + '"></label>' +
+            '<label class="cf cf-wide"><span>Quantities to compare</span><input type="text" name="qty_breaks" value="' + esc(d.qty_breaks) + '" placeholder="1, 10, 25, 50, 100"><small>Whole numbers, separated by commas.</small></label></div></section></div>' +
+            '<div class="cost-save-row"><button type="button" class="btn btn-ghost" data-cost="rate-reset">Restore original rates</button><button type="submit" class="btn btn-primary">' + UI.icon('save', 'icon-sm') + ' Save rate card</button></div></form>';
+    }
+    function cSubtitle() {
+        if (CS.view === 'quotes') return 'Every saved calculation';
+        if (CS.view === 'rates') return 'Material rates, cutting, printing and margins';
+        return CS.q && CS.q.quote_no ? 'Quote ' + CS.q.quote_no + (CS.dirty ? ' (unsaved changes)' : '') : 'Material, cutting, printing and selling price for any order';
+    }
+    function cRender() {
+        var el = content(); if (!el) return;
+        var tabs = [['calc', 'Calculator'], ['quotes', 'Saved quotes'], ['rates', 'Rate card']];
+        var nav = '<div class="seg" role="group" aria-label="Costing sections">' + tabs.map(function (t) { return '<button type="button" class="seg-btn' + (CS.view === t[0] ? ' active' : '') + '" data-cost="view" data-v="' + t[0] + '">' + t[1] + '</button>'; }).join('') + '</div>';
+        el.innerHTML = head('Costing Calculator', cSubtitle()) + nav + (CS.view === 'quotes' ? cQuotesHtml() : CS.view === 'rates' ? cRatesHtml() : cCalcHtml());
+        refreshIcons();
+        if (CS.view === 'calc') cRefresh();
+    }
+    function cFailMsg(err) {
+        var m = String((err && err.message) || 'Please try again.');
+        if (/costing_(config|quotes)|schema cache|does not exist/i.test(m)) m = 'The costing tables are not in your database yet. Run the latest supabase/schema.sql in the Supabase SQL editor, then reload this page.';
+        return { message: m };
+    }
+    async function loadCosting(t) {
+        var el = content(); cBind();
+        if (!CS.cfg) {
+            var r = await API.costing.getConfig(); if (stale(t)) return;
+            if (r.error) return fail(el, cFailMsg(r.error));
+            CS.cfg = BC.normalize(r.data && r.data.config); CS.cfgAt = r.data && r.data.updated_at;
+        }
+        if (!CS.q) CS.q = cBlankQuote();
+        if (CS.view === 'quotes') {
+            var qr = await API.costing.quotes(); if (stale(t)) return;
+            if (qr.error) return fail(el, cFailMsg(qr.error));
+            CS.quotes = qr.data || [];
+        }
+        cRender();
+    }
+
+    /* ---------- actions ---------- */
+    function cFormRerender(focusSel) {
+        var f = $('costForm'); if (!f) return;
+        f.innerHTML = cFormHtml(); refreshIcons(); cRefresh();
+        if (focusSel) { var n = f.querySelector(focusSel); if (n) n.focus(); }
+    }
+    function cHeadSync() { var p = document.querySelector('#adminContent .admin-head p'); if (p) p.textContent = cSubtitle(); }
+    async function cConfirmDiscard() {
+        if (!CS.dirty) return true;
+        return UI.confirm({ title: 'Discard changes?', message: 'This calculation has changes that are not saved.', confirmText: 'Discard' });
+    }
+    function cSummary(r) {
+        var T = r.totals;
+        return { ok: r.ok, qty: r.qty, margin: r.margin, mfg_pp: T.mfg_pp, sell_pp: T.sell_pp, whole_cost: T.whole_cost, order_sales: T.order_sales, order_profit: T.order_profit, gst: T.gst, order_total_incl_gst: T.order_total_incl_gst };
+    }
+    async function cSave(asCopy, btn) {
+        cCollect();
+        var q = CS.q, title = String(q.title || '').trim();
+        if (!title) { UI.toast('Give the product a name before saving.', 'warning'); var t = document.querySelector('[data-meta="title"]'); if (t) t.focus(); return; }
+        var rates = BC.normalize(q.rates || CS.cfg), r = BC.calc(q.inputs, rates);
+        var inputs = Object.assign({}, q.inputs, { rates: rates, notes: q.notes || '' });
+        var isNew = asCopy || !q.id;
+        UI.setLoading(btn, true, 'Saving');
+        var res = await API.costing.saveQuote({ id: asCopy ? null : q.id, title: title, customer_name: String(q.customer_name || '').trim() || null, status: q.status, lang: CS.lang, inputs: inputs, summary: cSummary(r), created_by: uid() });
+        UI.setLoading(btn, false);
+        if (res.error || !res.data) return UI.toast('Could not save: ' + ((res.error && res.error.message) || 'no response'), 'error');
+        q.id = res.data.id; q.quote_no = res.data.quote_no; q.rates = rates; CS.dirty = false;
+        log(isNew ? 'create' : 'update', 'costing_quote', q.id, { quote_no: q.quote_no, title: title });
+        UI.toast('Saved as ' + q.quote_no, 'success'); cHeadSync();
+    }
+    function cBrandBits() {
+        var c = window.Bestow && Bestow.contact || {}, b = window.Bestow && Bestow.branding || {};
+        return { brand: b.brand_name || 'Bestow', tagline: b.tagline || '', contact: [c.phone, c.email].filter(Boolean).join('  |  ') };
+    }
+    async function cRequestPdf(body, btn) {
+        UI.setLoading(btn, true, 'Preparing');
+        var res = await API.fn('costing-pdf', Object.assign({}, cBrandBits(), body));
+        UI.setLoading(btn, false);
+        var d = res.data;
+        if (res.error || !d || d.ok === false || !d.pdf_base64) {
+            var why = (res.error && res.error.message) || (d && d.message) || 'no response';
+            UI.toast('PDF not created: ' + String(why).replace(/[.\s]+$/, '') + '.' + (CS.view === 'calc' ? ' You can use Print instead, which makes the same sheet.' : ''), 'error', 8000); return false;
+        }
+        cDownload(d.pdf_base64, d.filename || 'bestow-costing.pdf');
+        if (d.warning) UI.toast(d.warning, 'warning', 9000);
+        return true;
+    }
+    async function cPdf(btn) {
+        cCollect();
+        var q = CS.q, r = BC.calc(q.inputs, cEff()); if (!r.ok) return UI.toast('Fix the highlighted problems first.', 'warning');
+        var ok = await cRequestPdf({ inputs: cInputs(), lang: CS.lang, mode: CS.mode, title: q.title, customer_name: q.customer_name, quote_no: q.quote_no, notes: q.notes, quote_id: q.id }, btn);
+        if (ok) log('pdf', 'costing_quote', q.id, { quote_no: q.quote_no, lang: CS.lang, mode: CS.mode });
+    }
+    function cPrint() {
+        cCollect();
+        var cfg = cEff(), r = BC.calc(CS.q.inputs, cfg); if (!r.ok) return UI.toast('Fix the highlighted problems first.', 'warning');
+        cOpenPrint(BC.doc(r, cMeta(CS.lang), CS.lang, CS.mode, CS.mode === 'internal' ? BC.scenarios(CS.q.inputs, cfg) : null));
+    }
+    async function cOpenQuote(id, asCopy) {
+        var r = await API.costing.quote(id);
+        if (r.error || !r.data) return UI.toast('Could not open the quote: ' + ((r.error && r.error.message) || 'not found'), 'error');
+        var d = r.data, inp = Object.assign({}, d.inputs || {}), rates = inp.rates || null, notes = inp.notes || '';
+        delete inp.rates; delete inp.notes;
+        ['acrylic', 'wood', 'uv', 'extras'].forEach(function (k) { if (!Array.isArray(inp[k])) inp[k] = []; });
+        ['qty', 'margin', 'design', 'labour', 'transport', 'gst', 'round_to'].forEach(function (k) { if (inp[k] === undefined || inp[k] === null) inp[k] = k === 'qty' ? '1' : ''; });
+        CS.q = { id: asCopy ? null : d.id, quote_no: asCopy ? '' : d.quote_no, title: asCopy ? String(d.title || '') + ' (copy)' : d.title, customer_name: d.customer_name || '', status: asCopy ? 'draft' : d.status, notes: notes, rates: rates, inputs: inp };
+        if (d.lang && BC.langs[d.lang]) CS.lang = d.lang;
+        CS.view = 'calc'; CS.dirty = !!asCopy; cRender();
+        window.scrollTo(0, 0);
+    }
+    async function cSetStatus(sel) {
+        var id = sel.getAttribute('data-cost-status'), r = await API.costing.setStatus(id, sel.value);
+        if (r.error) { UI.toast('Could not change the status: ' + r.error.message, 'error'); return; }
+        CS.quotes.forEach(function (q) { if (q.id === id) q.status = sel.value; });
+        log('status', 'costing_quote', id, { status: sel.value }); UI.toast('Status updated', 'success', 1400);
+    }
+
+    /* ---------- rate card ---------- */
+    function cCollectRates() {
+        var f = $('costRatesForm'); if (!f || !CS.draft) return;
+        var d = CS.draft, rows = [];
+        Array.prototype.forEach.call(f.querySelectorAll('[data-rate-row]'), function (tr) {
+            var o = {}; Array.prototype.forEach.call(tr.querySelectorAll('[data-r]'), function (e) { o[e.getAttribute('data-r')] = e.value; }); rows.push(o);
+        });
+        d.materials = rows;
+        ['with_white', 'without_white', 'always', 'margins', 'default_margin', 'qty_breaks'].forEach(function (k) { var e = f.elements[k]; if (e) d[k] = e.value; });
+    }
+    function cList(v) { return String(v || '').split(/[,;\n]+/).map(function (x) { return x.trim(); }).filter(Boolean); }
+    function cBuildRates(d) {
+        var errs = [], seen = {}, mats = [];
+        if (!d.materials.length) errs.push('Add at least one material.');
+        d.materials.forEach(function (m, i) {
+            var n = 'Row ' + (i + 1) + ': ', nm = String(m.material || '').trim(), t = BC.num(m.thickness), rt = BC.num(m.rate), ct = BC.num(m.cut);
+            if (!nm) return errs.push(n + 'enter a material name.');
+            if (!t.ok || !(t.v > 0)) return errs.push(n + 'thickness must be more than 0.');
+            if (!rt.ok || rt.v < 0) return errs.push(n + 'enter the rate per square foot (0 or more).');
+            if (!ct.ok || ct.v < 0) return errs.push(n + 'enter the cutting charge per piece (0 or more).');
+            var key = m.category + '|' + nm.toLowerCase() + '|' + t.v;
+            if (seen[key]) return errs.push(n + nm + ' ' + t.v + ' mm is listed twice.');
+            seen[key] = 1; mats.push({ category: m.category, material: nm, thickness: t.v, rate: rt.v, cut: ct.v });
+        });
+        var ww = BC.num(d.with_white), wo = BC.num(d.without_white);
+        if (!ww.ok || ww.v < 0) errs.push('UV printing with white must be 0 or more.');
+        if (!wo.ok || wo.v < 0) errs.push('UV printing without white must be 0 or more.');
+        var mg = cList(d.margins);
+        if (!mg.length) errs.push('Add at least one margin preset.');
+        mg.forEach(function (x) { var v = BC.num(x); if (!v.ok || v.v < 0 || v.v > 1000) errs.push('Margin "' + x + '" is not a valid percentage.'); });
+        var dm = BC.num(d.default_margin); if (!dm.ok || dm.v < 0 || dm.v > 1000) errs.push('The default margin must be a percentage from 0 to 1000.');
+        var qb = cList(d.qty_breaks);
+        if (!qb.length) errs.push('Add at least one quantity to compare.');
+        qb.forEach(function (x) { var v = BC.num(x); if (!v.ok || v.v < 1 || Math.floor(v.v) !== v.v) errs.push('Quantity "' + x + '" must be a whole number, 1 or more.'); });
+        if (errs.length) return { errors: errs };
+        return { errors: [], cfg: BC.normalize({ materials: mats, uv: { with_white: ww.v, without_white: wo.v, always_without_white: cList(d.always) }, margins: mg.map(Number), default_margin: dm.v, qty_breaks: qb.map(Number) }) };
+    }
+    async function cSaveRates(form) {
+        cCollectRates();
+        var b = cBuildRates(CS.draft);
+        if (b.errors.length) { UI.toast(b.errors[0] + (b.errors.length > 1 ? ' (' + (b.errors.length - 1) + ' more to fix)' : ''), 'warning', 6000); return; }
+        var btn = form.querySelector('[type=submit]'); UI.setLoading(btn, true, 'Saving');
+        var r = await API.costing.saveConfig(uid(), b.cfg);
+        UI.setLoading(btn, false);
+        if (r.error) return UI.toast('Could not save the rate card: ' + r.error.message, 'error');
+        CS.cfg = b.cfg; CS.draft = null; log('update', 'costing_rates', null, { materials: b.cfg.materials.length });
+        UI.toast('Rate card saved. New calculations use these rates.', 'success'); cRender();
+    }
+
+    async function cAct(act, el) {
+        var id = el.getAttribute('data-id');
+        switch (act) {
+        case 'view': {
+            var v = el.getAttribute('data-v'); if (v === CS.view) return;
+            if (CS.view === 'calc') cCollect(); if (CS.view === 'rates') cCollectRates();
+            CS.view = v; return Admin.load('costing');
+        }
+        case 'add-row': { cCollect(); var sec = el.getAttribute('data-sec'); CS.q.inputs[sec].push(cNewRow(sec)); CS.dirty = true; cFormRerender('.cost-row[data-sec="' + sec + '"]:last-of-type [data-f]'); return cHeadSync(); }
+        case 'del-row': {
+            cCollect(); var row = el.closest('.cost-row'), s2 = row.getAttribute('data-sec');
+            var idx = Array.prototype.indexOf.call($('costForm').querySelectorAll('.cost-row[data-sec="' + s2 + '"]'), row);
+            if (idx >= 0) CS.q.inputs[s2].splice(idx, 1); CS.dirty = true; cFormRerender(); return cHeadSync();
+        }
+        case 'margin': { var mi = document.querySelector('[data-top="margin"]'); if (mi) { mi.value = el.getAttribute('data-v'); cRefreshSoon(); } return; }
+        case 'use-rates': { cCollect(); CS.q.rates = null; CS.dirty = true; cFormRerender(); return cHeadSync(); }
+        case 'new': {
+            if (CS.view === 'calc') cCollect();
+            if (!(await cConfirmDiscard())) return;
+            CS.q = cBlankQuote(); CS.dirty = false; CS.view = 'calc'; return cRender();
+        }
+        case 'save': return cSave(false, el);
+        case 'save-copy': return cSave(true, el);
+        case 'print': return cPrint();
+        case 'pdf': return cPdf(el);
+        case 'open-quote': if (CS.dirty && !(await cConfirmDiscard())) return; return cOpenQuote(id, false);
+        case 'dup-quote': if (CS.dirty && !(await cConfirmDiscard())) return; return cOpenQuote(id, true);
+        case 'pdf-quote': {
+            var qq = CS.quotes.filter(function (x) { return x.id === id; })[0];
+            return cRequestPdf({ quote_id: id, lang: (qq && qq.lang) || 'en', mode: el.getAttribute('data-mode') || 'internal' }, el);
+        }
+        case 'del-quote': {
+            var dq = CS.quotes.filter(function (x) { return x.id === id; })[0];
+            var yes = await UI.confirm({ title: 'Delete quote', message: 'Permanently delete ' + (dq ? dq.quote_no + ' (' + dq.title + ')' : 'this quote') + '?', confirmText: 'Delete' }); if (!yes) return;
+            var rd = await API.costing.removeQuote(id); if (rd.error) return UI.toast('Could not delete: ' + rd.error.message, 'error');
+            if (CS.q && CS.q.id === id) { CS.q.id = null; CS.q.quote_no = ''; }
+            log('delete', 'costing_quote', id, { quote_no: dq && dq.quote_no }); UI.toast('Quote deleted', 'success'); return Admin.load('costing');
+        }
+        case 'export-quotes': return Utils.downloadCSV(CS.quotes.map(function (q) { var s = q.summary || {}; return { quote_no: q.quote_no, title: q.title, customer: q.customer_name || '', status: q.status, qty: s.qty, mfg_pp: s.mfg_pp, sell_pp: s.sell_pp, order_sales: s.order_sales, order_profit: s.order_profit, updated: q.updated_at }; }),
+            [{ label: 'Quote', key: 'quote_no' }, { label: 'Product', key: 'title' }, { label: 'Customer', key: 'customer' }, { label: 'Status', key: 'status' }, { label: 'Quantity', key: 'qty' }, { label: 'Cost per product', key: 'mfg_pp' }, { label: 'Price per product', key: 'sell_pp' }, { label: 'Order value', key: 'order_sales' }, { label: 'Order profit', key: 'order_profit' }, { label: 'Updated', key: 'updated' }], 'bestow-quotes-' + dayKey(new Date()) + '.csv');
+        case 'rate-add': { cCollectRates(); CS.draft.materials.push({ category: 'acrylic', material: '', thickness: '', rate: '', cut: '' }); var tb = $('costRateRows'); tb.insertAdjacentHTML('beforeend', cRateRow(CS.draft.materials[CS.draft.materials.length - 1])); refreshIcons(); var inp = tb.lastElementChild.querySelector('[data-r="material"]'); if (inp) inp.focus(); return; }
+        case 'rate-del': { var tr = el.closest('[data-rate-row]'); if (tr) tr.remove(); return; }
+        case 'rate-reset': { var y2 = await UI.confirm({ title: 'Restore original rates', message: 'The rate card below is replaced with the original Bestow rates. Nothing is saved until you press Save rate card.', confirmText: 'Restore' }); if (!y2) return; CS.draft = cDraftFromCfg(BC.defaults()); return cRender(); }
+        }
+    }
+    function cSyncThickness(sel) {
+        var row = sel.closest('.cost-row'), sec = row.getAttribute('data-sec'), ts = row.querySelector('[data-f="thickness"]'), cur = Number(ts.value);
+        var th = cThicks(cEff(), sec, sel.value);
+        ts.innerHTML = th.length ? th.map(function (t) { return cOpt(t, t + ' mm', cur); }).join('') : '<option value="">-</option>';
+        if (th.indexOf(cur) >= 0) ts.value = String(cur);
+    }
+    function cSyncPrint(sel) {
+        var row = sel.closest('.cost-row'), ps = row.querySelector('[data-f="print"]'), cfg = cEff();
+        var forced = cfg.uv.always_without_white.map(cLc).indexOf(cLc(sel.value)) >= 0;
+        ps.disabled = forced; if (forced) ps.value = 'without_white';
+    }
+    function cBind() {
+        if (CS.bound) return;
+        var el = content(); if (!el) return; CS.bound = true;
+        el.addEventListener('click', function (e) {
+            var b = e.target.closest('[data-cost]'); if (!b || !el.contains(b)) return;
+            e.preventDefault(); cAct(b.getAttribute('data-cost'), b);
+        });
+        el.addEventListener('input', function (e) {
+            var t = e.target; if (!t || !t.closest) return;
+            if (t.closest('#costForm') && (t.hasAttribute('data-top') || t.hasAttribute('data-meta') || t.hasAttribute('data-f'))) cRefreshSoon();
+            else if (t.id === 'costSearch') { CS.search = t.value; var l = $('costQuoteList'); if (l) { l.innerHTML = cQuoteRows(); refreshIcons(); } }
+        });
+        el.addEventListener('change', function (e) {
+            var t = e.target; if (!t || !t.closest) return;
+            if (t.closest('#costForm')) {
+                var f = t.getAttribute('data-f');
+                if (f === 'material') cSyncThickness(t); else if (f === 'on') cSyncPrint(t);
+                if (t.hasAttribute('data-top') || t.hasAttribute('data-meta') || f) cRefreshSoon();
+            }
+            else if (t.id === 'costLang') CS.lang = t.value;
+            else if (t.id === 'costMode') CS.mode = t.value;
+            else if (t.id === 'costStatusFilter') { CS.status = t.value; var l2 = $('costQuoteList'); if (l2) { l2.innerHTML = cQuoteRows(); refreshIcons(); } }
+            else if (t.hasAttribute('data-cost-status')) cSetStatus(t);
+        });
+    }
+
+    /* ======================================================================
        GLOBAL SEARCH
        ====================================================================== */
     async function globalSearch(q) {
@@ -956,6 +1559,7 @@
             case 'productForm': return saveProduct(form);
             case 'categoryForm': return saveCategory(form);
             case 'couponForm': return saveCoupon(form);
+            case 'costRatesForm': return cSaveRates(form);
             case 'customerForm': return saveCustomer(form);
             case 'returnAdminForm': {
                 var rq = $('adminModalBody').__return, rv = readForm(form), rb = form.querySelector('[type=submit]');
@@ -1101,7 +1705,7 @@
     /* ======================================================================
        PUBLIC API
        ====================================================================== */
-    var LOADERS = { dashboard: loadDashboard, orders: loadOrders, products: loadProducts, categories: loadCategories, coupons: loadCoupons, customers: loadCustomers, reviews: loadReviews, inquiries: loadInquiries, newsletter: loadNewsletter, content: loadContent, branding: loadBranding, settings: loadSettings, contact: loadContact, seo: loadSeo, faq: loadFaq, policies: loadPolicies, emails: loadEmails, activity: loadActivity, returns: loadReturns };
+    var LOADERS = { dashboard: loadDashboard, orders: loadOrders, products: loadProducts, categories: loadCategories, coupons: loadCoupons, customers: loadCustomers, reviews: loadReviews, inquiries: loadInquiries, newsletter: loadNewsletter, content: loadContent, branding: loadBranding, settings: loadSettings, contact: loadContact, seo: loadSeo, faq: loadFaq, policies: loadPolicies, emails: loadEmails, activity: loadActivity, returns: loadReturns, costing: loadCosting };
 
     var Admin = window.Admin = {
         init: function () { bindEvents(); },
